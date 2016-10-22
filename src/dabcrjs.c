@@ -38,6 +38,8 @@ int dabcrjs(ABC_Parameters abc_p_c, ABC_Parameters abc_p_f,Dataset *data, CDF_es
     unsigned int i,j,k;
     /* use standard ABC rejection for fine level sample*/
     dabcrs(abc_p_f,data,theta_f,rho_f);
+    //dabcrs(abc_p_c,data,theta_c,NULL);
+    //return 0;
     G_LUT = (size_t *)malloc(abc_p_f.nacc*sizeof(size_t));
 
     F_tmp = (double*)malloc(F_c->G.numPoints*sizeof(double));
@@ -105,7 +107,7 @@ int dabcrjs(ABC_Parameters abc_p_c, ABC_Parameters abc_p_f,Dataset *data, CDF_es
         /*select this point + white noise*/
         for( k=0;k<abc_p_c.k;k++)
         {
-           theta_c[i*abc_p_c.k + k] = F_c->G.coords[ind_c*abc_p_c.k + k] + durngus(-0.5,0.5)*(F_c->G.deltas[k]);
+           theta_c[i*abc_p_c.k + k] = F_c->G.coords[ind_c*abc_p_c.k + k] + durngus(-1.0,1.0)*(F_c->G.deltas[k]);
         }
     }
     //exit(1);

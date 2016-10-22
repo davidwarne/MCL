@@ -62,12 +62,29 @@ struct ABC_Parameters_struct {
     void *sim; /*Model simulation object */
     SSAL_real_t (*rho)(Dataset *,Dataset *); /*distance function*/
     int (*p)(unsigned int,unsigned int,SSAL_real_t *,SSAL_real_t *); /*prior sampler function*/
+    SSAL_real_t (*pd)(unsigned int, SSAL_real_t*); /* Prior Distribution function; not required for all methods*/
     int (*s)(void *, SSAL_real_t* ,Dataset *); /*model simulation function*/
 };
 
 typedef struct ABC_Parameters_struct ABC_Parameters;
 
-struct ML_Parameters_struct {
+struct MCMC_Parameters_struct {
+    unsigned int burnin_iters; /*number of burnin simulation to perfrom before sampling*/
+    SSAL_real_t (*q)(unsigned int, SSAL_real_t*, SSAL_real_t*); /*transition kernel sampler*/
+    SSAL_real_t (*qd)(unsigned int, SSAL_real_t*, SSAL_real_t*); /*transition kernel Distribution function*/
+};
+typedef struct MCMC_Parameters_struct MCMC_Parameters;
+
+struct SMC_Parameters_struct {
+    unsigned int T;/*number of steps*/
+    SSAL_real_t *eps_t; /*ABC thresholds*/
+    SSAL_real_t E; /*Effective sample size (ESS) threshold for re-sampling.*/
+    SSAL_real_t (*q)(unsigned int, SSAL_real_t*, SSAL_real_t*); /*transition kernel sampler*/
+    SSAL_real_t (*qd)(unsigned int, SSAL_real_t*, SSAL_real_t*); /*transition kernel Distribution function*/
+};
+typedef struct SMC_Parameters_struct SMC_Parameters;
+
+struct MLMC_Parameters_struct {
     unsigned int L; /*Max level*/
     unsigned int K; /* scale factor */
     SSAL_real_t eps0; /*coarsest level*/
@@ -79,7 +96,7 @@ struct ML_Parameters_struct {
     SSAL_real_t beta; /*strong convergence rate*/
     unsigned int presample; /* Flag to use sampling for variance estimates*/
 };
-typedef struct ML_Parameters_struct ML_Parameters;
+typedef struct MLMC_Parameters_struct MLMC_Parameters;
 
 struct ndgrid_struct {
     int dim; /*dimensionality of grid*/
@@ -115,7 +132,7 @@ int dabcrs(ABC_Parameters, Dataset *, double *,double *);
 int dabcrjs(ABC_Parameters , ABC_Parameters, Dataset * , CDF_estimate *, double *, double *, double *);
 
 /*sampling calculation of N_l*/
-int dmlabcnls(ABC_Parameters ,int ,ML_Parameters,  Dataset *, CDF_estimate *,unsigned int *);
+int dmlabcnls(ABC_Parameters ,int ,ML_Parameters,  Dataset *, CDF_estimate *,unsigned int *,double *);
 int dabcns(ABC_Parameters, int, double ,Dataset * , CDF_estimate *, unsigned int *);
 
 /*Monte Carlo integration functions*/
