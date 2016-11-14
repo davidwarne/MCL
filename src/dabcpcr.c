@@ -34,13 +34,13 @@
  */
 int dabcpcr(ABC_Parameters abc_p, SMC_Parameters smc_p, Dataset * data, double * theta, double * weights, double *rho)
 {
-    unsigned int t,i;
+    unsigned int t,i,j;
     Dataset *data_s;
     double *theta_prev;
     double * weights_prev;
     double * rho_prev;
     double W_sum, W_sum_prev;
-
+    t =0;
     /*allocate memory for simulated  dataset*/
     data_s = copyDataset(data); 
     
@@ -50,7 +50,7 @@ int dabcpcr(ABC_Parameters abc_p, SMC_Parameters smc_p, Dataset * data, double *
 
     /*initialise with ABC rejection samples with eps_0*/
     abc_p.eps = smc_p.eps_t[0];
-    dabcrs(abc_p,dataset, theta, rho);
+    dabcrs(abc_p,data, theta, rho);
    
    /*initialise weights W_i = 1 (we don't normalise, rather we just store the sum)*/
     for (i=0;i<abc_p.nacc;i++)
@@ -58,7 +58,34 @@ int dabcpcr(ABC_Parameters abc_p, SMC_Parameters smc_p, Dataset * data, double *
         weights[i] = 1.0;
     }
     W_sum = (double)abc_p.nacc;
+#if defined(__CHECKPOINT__)
+        {
+            /*for long running simulations*/
+            FILE *fp;
+            fp = fopen(CHECKPOINT_FILENAME,"a");
+            /*output particles*/
+            fprintf(fp,"%d %lg",t,smc_p.eps_t[t]);
+            for (i=0;i<abc_p.nacc;i++)
+            {
+                for (j=0;j<abc_p.k;j++)
+                {
+                    fprintf(fp," %lg",theta[i*abc_p.k + j]);
+                }
+            }
+            fprintf(fp,"\n");
+            /*output weights*/
+            fprintf(fp,"%d %lg",t,smc_p.eps_t[t]);
+            for (i=0;i<abc_p.nacc;i++)
+            {
+                fprintf(fp," %lg",weights[i]);
+            }
+            fprintf(fp,"\n");
 
+            fprintf(fp,"%d %d\n",t,sim_counter);
+            fclose(fp);
+        }
+#endif
+ 
     /*commence sequential Monte Carlo steps*/
     for (t=1;t<smc_p.T;t++)
     {
@@ -76,7 +103,7 @@ int dabcpcr(ABC_Parameters abc_p, SMC_Parameters smc_p, Dataset * data, double *
             while (d >= smc_p.eps_t[t])
             {
                 /*sample a particle by weight from {theta_t-1,W_t-1} */
-                j = durngpnfs(abc_p.nacc,weights_prev,W_sum_prev);
+                j = durngpmfs(abc_p.nacc,weights_prev,W_sum_prev);
                 /*perturb particle using transition kernel*/
                 (*(smc_p.q))(abc_p.k,theta_prev+j*abc_p.k,theta + i*abc_p.k);
                 /*simulate data*/
@@ -93,9 +120,20 @@ int dabcpcr(ABC_Parameters abc_p, SMC_Parameters smc_p, Dataset * data, double *
             back_kern = 0;
             for (j=0;j<abc_p.nacc;j++)
             {
-                back_kern += weights_prev[j] * (*(smc_p.qd)(abc_p.k,theta_prev+j*abc_p.k,theta+i*abc_p.k));
+                back_kern += weights_prev[j] *( (*(smc_p.qd))(abc_p.k,theta_prev+j*abc_p.k,theta+i*abc_p.k));
             }
             weights[i] = (*(abc_p.pd))(abc_p.k,theta + i*abc_p.k)*W_sum / back_kern;
+            //{
+            //    /*debug...*/
+            //    FILE *fp;
+            //    fp = fopen("")
+            //}
+            //fprintf(stderr,"%g,%g,%g,%g",weights_prev[i],weights[i],back_kern,(*(abc_p.pd))(abc_p.k,theta + i*abc_p.k));
+            //for (j=0;j<abc_p.k;j++)
+            //{
+            //    fprintf(stderr,",%g,%g",theta_prev[i*abc_p.k + j],theta[i*abc_p.k + j]);
+            //}
+            //fprintf(stderr,"\n");
         }
         /*update weight sum*/
         W_sum = 0;
@@ -111,16 +149,15 @@ int dabcpcr(ABC_Parameters abc_p, SMC_Parameters smc_p, Dataset * data, double *
             ESS += weights[i]*weights[i];
         }
         ESS = W_sum*W_sum/ESS;
-
-        if (ESS < E) /*resample with replacement*/
+        if (ESS < smc_p.E) /*resample with replacement*/
         {
             memcpy(theta_prev,theta,abc_p.k*abc_p.nacc*sizeof(double));
             if (rho != NULL)
-                memcpy(rho_prev,rho,theta,abc_p.k*abc_p.nacc*sizeof(double));
+                memcpy(rho_prev,rho,abc_p.nacc*sizeof(double));
             for (i=0;i<abc_p.nacc;i++)
             {
-                j = durngpmfs(abc_p.nacc,wieghts,W_sum);
-                memcpy(theta +i*abc_p.k, theta_prev + j*abc_k,abc_p.k*sizeof(double));
+                j = durngpmfs(abc_p.nacc,weights,W_sum);
+                memcpy(theta +i*abc_p.k, theta_prev + j*abc_p.k,abc_p.k*sizeof(double));
                 if (rho != NULL)
                     rho[i] = rho[j];
             }
@@ -131,6 +168,33 @@ int dabcpcr(ABC_Parameters abc_p, SMC_Parameters smc_p, Dataset * data, double *
             }
             W_sum = (double)abc_p.nacc;
         }
+#if defined(__CHECKPOINT__)
+        {
+            /*for long running simulations*/
+            FILE *fp;
+            fp = fopen(CHECKPOINT_FILENAME,"a");
+            /*output particles*/
+            fprintf(fp,"%d %lg",t,smc_p.eps_t[t]);
+            for (i=0;i<abc_p.nacc;i++)
+            {
+                for (j=0;j<abc_p.k;j++)
+                {
+                    fprintf(fp," %lg",theta[i*abc_p.k + j]);
+                }
+            }
+            fprintf(fp,"\n");
+            /*output weights*/
+            fprintf(fp,"%d %lg",t,smc_p.eps_t[t]);
+            for (i=0;i<abc_p.nacc;i++)
+            {
+                fprintf(fp," %lg",weights[i]);
+            }
+            fprintf(fp,"\n");
+
+            fprintf(fp,"%d %d\n",t,sim_counter);
+            fclose(fp);
+        }
+#endif
     }
 
     /*normalise weights*/
@@ -138,5 +202,5 @@ int dabcpcr(ABC_Parameters abc_p, SMC_Parameters smc_p, Dataset * data, double *
     {
         weights[i] /= W_sum;
     }
-    return 0;;
+    return 0;
 }

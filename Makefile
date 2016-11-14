@@ -1,8 +1,10 @@
 #!/bin/make
 
-CC = gcc
-#OPTS = -O2 -std=gnu99 -D__SERIAL__ -D__FLOAT64__ 
-OPTS = -pg -g -std=gnu99 -D__SERIAL__ -D__FLOAT64__
+CC = icc
+OPTS = -O2 -mkl=sequential -D__SERIAL__ -D__FLOAT64__ 
+#OPTS = -O2 -mkl=sequential -D__SERIAL__ -D__FLOAT64__ -D__CHECKPOINT__ 
+#CC = gcc
+#OPTS = -O2 -D__SERIAL__ -D__FLOAT64__
 
 NAME = ssal
 #OPTS = -g   -D__SERIAL__ 
@@ -10,9 +12,9 @@ NAME = ssal
 EXPDIR=examples
 SRCDIR=src
 
-EXESRC = $(EXPDIR)/testMLABC.c
+EXESRC = $(EXPDIR)/ABCvsMLMC_BCRN.c $(EXPDIR)/MLABC_TB.c $(EXPDIR)/ABCPCR_TB.c $(EXPDIR)/ABCMCMC_TB.c $(EXPDIR)/ABCREJ_TB.c $(EXPDIR)/ABC_toyProblem.c $(EXPDIR)/ABCMCMC_toyProblem.c $(EXPDIR)/ABCPCR_toyProblem.c $(EXPDIR)/MLABC_toyProblem.c
 #SRC = $(SRCDIR)/sabccdfs.c $(SRCDIR)/smlabccdfs.c $(SRCDIR)/sabcrs.c $(SRCDIR)/sabcrjs.c $(SRCDIR)/dabccdfs.c $(SRCDIR)/dmlabccdfs.c $(SRCDIR)/dabcrs.c $(SRCDIR)/dabcrjs.c
-SRC = $(SRCDIR)/dabccdfs.c $(SRCDIR)/dmlabccdfs.c $(SRCDIR)/dabcrs.c $(SRCDIR)/dabcrjs.c $(SRCDIR)/dmlabcnls.c $(SRCDIR)/dabcns.c $(SRCDIR)/dmcint.c $(SRCDIR)/dmcintd.c $(SRCDIR)/copyDataset.c
+SRC = $(SRCDIR)/libabc.c $(SRCDIR)/dabccdfs.c $(SRCDIR)/dmlabccdfs.c $(SRCDIR)/dabcrs.c $(SRCDIR)/dabcmcmc.c $(SRCDIR)/dabcpcr.c $(SRCDIR)/dabcrjs.c $(SRCDIR)/dmlabcnls.c $(SRCDIR)/dabcns.c $(SRCDIR)/dmcint.c $(SRCDIR)/dmcintd.c $(SRCDIR)/copyDataset.c
 OBJS = $(SRC:.c=.o)
 EXEOBJS=$(EXESRC:.c=.o)
 EXE = $(EXESRC:.c=)

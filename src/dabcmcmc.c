@@ -42,11 +42,20 @@ int dabcmcmc(ABC_Parameters abc_p, MCMC_Parameters mcmc_p, Dataset *data, double
     /*allocate memory for simulated dataset*/
     data_s = copyDataset(data);
     
-    /*obtain initial accepted sample using ABC rejection*/
-    nacc = abc_p.nacc
-    abc_p.nacc = 1;
-    dabcrs(abc_p,data,theta,rho);
-    abc_p,nacc = nacc;
+    
+    if (mcmc_p.theta0 == NULL)
+    {
+        /*obtain initial accepted sample using ABC rejection*/
+        nacc = abc_p.nacc;
+        abc_p.nacc = 1;
+        dabcrs(abc_p,data,theta,rho);
+        abc_p.nacc = nacc;
+    }
+    else
+    {
+        memcpy(theta,mcmc_p.theta0,abc_p.k*sizeof(double));
+    }
+
 
     /*now simulate the markov chain*/
     cur_p = 0;
@@ -54,10 +63,10 @@ int dabcmcmc(ABC_Parameters abc_p, MCMC_Parameters mcmc_p, Dataset *data, double
     for (j = 0; j<=mcmc_p.burnin_iters;j++)
     {
         /*make new proposal*/
-        (*(mcmc_p.q))(abc_p.k,theta+cur_p*abc_p.k,theta+prop_p*abc_k);
+        (*(mcmc_p.q))(abc_p.k,theta+cur_p*abc_p.k,theta+prop_p*abc_p.k);
 
         /*simulate process with proposed parameters*/
-        (*(abc_p.s))(abc_p.sim,theta+prop_p*abc_k,data_s);
+        (*(abc_p.s))(abc_p.sim,theta+prop_p*abc_p.k,data_s);
 
         /*check if we accept the new proposal*/
         d = (*(abc_p.rho))(data,data_s);
@@ -97,10 +106,10 @@ int dabcmcmc(ABC_Parameters abc_p, MCMC_Parameters mcmc_p, Dataset *data, double
         unsigned char reject;
         reject = 1;
         /*make new proposal*/
-        (*(mcmc_p.q))(abc_p.k,theta+cur_p*abc_p.k,theta+prop_p*abc_k);
+        (*(mcmc_p.q))(abc_p.k,theta+cur_p*abc_p.k,theta+prop_p*abc_p.k);
 
         /*simulate process with proposed parameters*/
-        (*(abc_p.s))(abc_p.sim,theta+prop_p*abc_k,data_s);
+        (*(abc_p.s))(abc_p.sim,theta+prop_p*abc_p.k,data_s);
 
         /*check if we accept the new proposal*/
         d = (*(abc_p.rho))(data,data_s);
@@ -124,7 +133,7 @@ int dabcmcmc(ABC_Parameters abc_p, MCMC_Parameters mcmc_p, Dataset *data, double
             lr = (p_n*q_n)/(p_d*q_d);
             h = (lr < 1.0) ? lr : 1.0;
 
-            reject = (durngus(0.0,1.0) > h) /*reject condition*/
+            reject = (durngus(0.0,1.0) > h); /*reject condition*/
         }
         
         if (reject)/*not a candidate, keep current state*/
@@ -135,12 +144,32 @@ int dabcmcmc(ABC_Parameters abc_p, MCMC_Parameters mcmc_p, Dataset *data, double
         }
         else /*accept new state*/
         {
-            rho[prop_p] = d;
+            if (rho != NULL)
+                rho[prop_p] = d;
         }
         /*update pointers*/
         cur_p = prop_p;
         prop_p++;
-        
+#if defined(__CHECKPOINT__)
+        if(j%1000 == 0)
+        {
+            
+            FILE *fp;
+            unsigned int i,ii,k;
+            fp = fopen(CHECKPOINT_FILENAME,"a");
+            for (i=0;i<1000;i++)
+            {
+                ii = j - 1000 + i;
+                fprintf(fp,"%d",ii);
+                for (k=0;k<abc_p.k;k++)
+                {
+                    fprintf(fp," %lg",theta[ii*abc_p.k+k]);
+                }
+                fprintf(fp,"\n");
+            }
+            fclose(fp);
+        }
+#endif
     }
 
     return 0;

@@ -35,7 +35,7 @@ char *outputfilename;
 char *summaryfilename;
 /*parameter structures*/
 ABC_Parameters abc_p;
-ML_Parameters ml_p;
+MLMC_Parameters ml_p;
 SSAL_real_t smoothfactor;
 SSAL_real_t scalefactor;
 int D; 

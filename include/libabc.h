@@ -34,6 +34,11 @@ enum ABC_DataType_enum{
 };
 typedef enum ABC_DataType_enum ABC_DataType;
 
+#if defined(__CHECKPOINT__)
+#define CHECKPOINT_FILENAME "sim.chkpnt"
+#endif
+extern unsigned int sim_counter; 
+
 struct field_struct {
     char name[ABC_MAX_NAME_SIZE]; /*field name*/
     size_t numRows; 
@@ -70,7 +75,8 @@ typedef struct ABC_Parameters_struct ABC_Parameters;
 
 struct MCMC_Parameters_struct {
     unsigned int burnin_iters; /*number of burnin simulation to perfrom before sampling*/
-    SSAL_real_t (*q)(unsigned int, SSAL_real_t*, SSAL_real_t*); /*transition kernel sampler*/
+    SSAL_real_t *theta0;
+    int (*q)(unsigned int, SSAL_real_t*, SSAL_real_t*); /*transition kernel sampler*/
     SSAL_real_t (*qd)(unsigned int, SSAL_real_t*, SSAL_real_t*); /*transition kernel Distribution function*/
 };
 typedef struct MCMC_Parameters_struct MCMC_Parameters;
@@ -79,7 +85,7 @@ struct SMC_Parameters_struct {
     unsigned int T;/*number of steps*/
     SSAL_real_t *eps_t; /*ABC thresholds*/
     SSAL_real_t E; /*Effective sample size (ESS) threshold for re-sampling.*/
-    SSAL_real_t (*q)(unsigned int, SSAL_real_t*, SSAL_real_t*); /*transition kernel sampler*/
+    int (*q)(unsigned int, SSAL_real_t*, SSAL_real_t*); /*transition kernel sampler*/
     SSAL_real_t (*qd)(unsigned int, SSAL_real_t*, SSAL_real_t*); /*transition kernel Distribution function*/
 };
 typedef struct SMC_Parameters_struct SMC_Parameters;
@@ -95,6 +101,7 @@ struct MLMC_Parameters_struct {
     SSAL_real_t alpha; /*weak convergence rate*/
     SSAL_real_t beta; /*strong convergence rate*/
     unsigned int presample; /* Flag to use sampling for variance estimates*/
+    unsigned int presample_trials; /*number of samples for variance estimates*/
 };
 typedef struct MLMC_Parameters_struct MLMC_Parameters;
 
@@ -125,14 +132,17 @@ typedef struct CDF_estimate_struct CDF_estimate;
 
 int dabccdfs(ABC_Parameters, Dataset * , CDF_estimate *);
 
-int dmlabccdfs(ABC_Parameters ,ML_Parameters,  Dataset *, CDF_estimate *);
+int dmlabccdfs(ABC_Parameters ,MLMC_Parameters,  Dataset *, CDF_estimate *);
 
 /*ABC rejection samplers*/
 int dabcrs(ABC_Parameters, Dataset *, double *,double *);
 int dabcrjs(ABC_Parameters , ABC_Parameters, Dataset * , CDF_estimate *, double *, double *, double *);
 
+int dabcmcmc(ABC_Parameters, MCMC_Parameters, Dataset *, double *,double *);
+int dabcpcr(ABC_Parameters, SMC_Parameters, Dataset *, double *, double *,double *);
+
 /*sampling calculation of N_l*/
-int dmlabcnls(ABC_Parameters ,int ,ML_Parameters,  Dataset *, CDF_estimate *,unsigned int *,double *);
+int dmlabcnls(ABC_Parameters ,int ,MLMC_Parameters,  Dataset *, CDF_estimate *,unsigned int *,double *);
 int dabcns(ABC_Parameters, int, double ,Dataset * , CDF_estimate *, unsigned int *);
 
 /*Monte Carlo integration functions*/

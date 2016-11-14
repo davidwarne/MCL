@@ -17,11 +17,13 @@
 
 #include "libabc.h"
 #include <time.h>
+
+#define MINCLOCKS 5000
 /**
  * @brief samples runtime and variance for each bias correction term in ML estimater to
  * select optimal N_l based on these.
  */
-int dmlabcnls(ABC_Parameters abc_p, int trials,ML_Parameters ml_p, Dataset *data, CDF_estimate *M, unsigned int *Nl,double *Wl)
+int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *data, CDF_estimate *M, unsigned int *Nl,double *Wl)
 {
     int l,j,i,k;
     ABC_Parameters *abc_pl;
@@ -105,6 +107,11 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,ML_Parameters ml_p, Dataset *data
                 dmcint(abc_pl[l].nacc,abc_pl[l].k,thetal,M->G.coords + j*M->G.dim,M->g,E+j,V+j);
             }
 
+            sigma2[l] = V[0];
+            for (j=1;j<M->G.numPoints;j++)
+            {
+                sigma2[l] = (V[j] > sigma2[l]) ? V[j] : sigma2[l];
+            }
         }
         else
         {double *Etheta3;
@@ -162,72 +169,87 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,ML_Parameters ml_p, Dataset *data
                 Etheta += d*d;
             }
             Etheta /= (double)abc_pl[l].nacc;
-            for (k=0;k<abc_pl[l].k;k++)
-            {
-                Etheta3[k] /= (double)abc_pl[l].nacc;
-            }
-            dabcrs(abc_pl[l-1], data,thetalm1, NULL);
-            for (i=0;i<abc_pl[l].nacc;i++)
-            {
-                double d;
-                d = 0;
-                for (k=0;k<abc_pl[l].k;k++)
-                {
-                    double n = fabs(thetal[i*abc_pl[l].k + k] - thetalm1[i*abc_pl[l].k + k]);
-                    Etheta4[k] += (thetal[i*abc_pl[l].k + k] - thetalm1[i*abc_pl[l].k + k]);
-                    if (n > d){
-                        d = n;
-                    }
-                }
-                Etheta2 += d*d;
-            }
-            Etheta2 /= (double)abc_pl[l].nacc;
-            for (k=0;k<abc_pl[l].k;k++)
-            {
-                Etheta4[k] /= (double)abc_pl[l].nacc ;
-            }
+           for (k=0;k<abc_pl[l].k;k++)
+           {
+               Etheta3[k] /= (double)abc_pl[l].nacc;
+           }
+           dabcrs(abc_pl[l-1], data,thetalm1, NULL);
+           for (i=0;i<abc_pl[l].nacc;i++)
+           {
+               double d;
+               d = 0;
+               for (k=0;k<abc_pl[l].k;k++)
+               {
+                   double n = fabs(thetal[i*abc_pl[l].k + k] - thetalm1[i*abc_pl[l].k + k]);
+                   Etheta4[k] += (thetal[i*abc_pl[l].k + k] - thetalm1[i*abc_pl[l].k + k]);
+                   if (n > d){
+                       d = n;
+                   }
+               }
+               Etheta2 += d*d;
+           }
+           Etheta2 /= (double)abc_pl[l].nacc;
+           for (k=0;k<abc_pl[l].k;k++)
+           {
+               Etheta4[k] /= (double)abc_pl[l].nacc ;
+           }
 
-            fprintf(stderr,"l = %d, E[|Th_l - Th_{l-1}|_infty^2] = %g uncor %g\n",l,Etheta,Etheta2); 
-            fprintf(stderr,"l = %d, E[Th_l - Th_{l-1}] = ",l); 
-            for (k=0;k<abc_pl[l].k;k++)
-            {
-                fprintf(stderr,"[%f u %f] ",Etheta3[k],Etheta4[k]); 
-            }
-            fprintf(stderr,"\n");
+           fprintf(stderr,"l = %d, E[|Th_l - Th_{l-1}|_infty^2] = %g uncor %g\n",l,Etheta,Etheta2); 
+           fprintf(stderr,"l = %d, E[Th_l - Th_{l-1}] = ",l); 
+           for (k=0;k<abc_pl[l].k;k++)
+           {
+               fprintf(stderr,"[%f u %f] ",Etheta3[k],Etheta4[k]); 
+           }
+           fprintf(stderr,"\n");
+            sigma2[l] = Etheta;
         }
         end_t = clock();
-
-        /* compute Var[g_sj] = |(E[g_sj^2] - E[g_sj])|_\infty^2 < O(E[|\theta_l - \theta_{l-1}|_\infty^2])*/
-        sigma2[l] = Etheta;
-        times[l] = ((double)(end_t - start_t))/((double)CLOCKS_PER_SEC);
-
+        
         for (j=0;j<M->G.numPoints;j++)
         {
             M->F[j] += E[j];
+        }
+
+        if (end_t - start_t >= 2*MINCLOCKS)
+        {
+            times[l] = ((double)(end_t - start_t))/((double)CLOCKS_PER_SEC);
+        }
+        else
+        {    
+            times[l] = ((double)MINCLOCKS)/((double)CLOCKS_PER_SEC);
         }
     }
 
     /*use optimal solution based onn Lagrange multiplier*/
     c = 0;
-    for (l=0;l<=ml_p.L;l++)
+    Nl[0] = (unsigned int)ceil(log((double)M->G.numPoints)*sigma2[0]/(ml_p.target_RMSE*ml_p.target_RMSE));
+    for (l=1;l<=ml_p.L;l++)
     {
         c += sqrt(sigma2[l]*times[l]);
     }
-    for (l=0;l<=ml_p.L;l++)
+    for (l=1;l<=ml_p.L;l++)
     {
         Nl[l] = (unsigned int)ceil(log((double)M->G.numPoints)*c*(sqrt(sigma2[l])/sqrt(times[l]))/(ml_p.target_RMSE*ml_p.target_RMSE));
     }
     if (Wl != NULL)
     {
-        for (l=0;l<=ml_p.L;l++)
+        double W_max;
+        W_max = 0;
+        Wl[0] =1;
+        for (l=1;l<=ml_p.L;l++)
         {
             Wl[l] = c*(sqrt(sigma2[l])/sqrt(times[l]));
+            W_max = (W_max < Wl[l]) ? Wl[l] : W_max;
+        }
+        for (l=1;l<=ml_p.L;l++)
+        {
+            Wl[l] /= W_max;
         }
     }
     for (l=0;l<=ml_p.L;l++)
     {
         Nl[l] = (Nl[l] < trials) ? trials : Nl[l];
-        fprintf(stdout,"N_%d = %d, E[|theta_%d - theta_%d-1|_infty^2] = %g, eps_%d = %g,c_%d = %g\n",l,Nl[l],l,sigma2[l],l,ml_p.eps_l[l],l,times[l]);
+//        fprintf(stderr,"N_%d = %d, E[|theta_%d - theta_%d-1|_infty^2] = %g, eps_%d = %g,c_%d = %g\n",l,Nl[l],l,sigma2[l],l,ml_p.eps_l[l],l,times[l]);
     }
 
     free(times);

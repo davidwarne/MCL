@@ -28,7 +28,7 @@
  * @param M the resulting estimated CDF 
  *
  */
-int dmlabccdfs(ABC_Parameters abc_p,ML_Parameters ml_p, Dataset *data, CDF_estimate *M)
+int dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, CDF_estimate *M)
 {
     /*initialise*/
     double *E;
@@ -55,11 +55,11 @@ int dmlabccdfs(ABC_Parameters abc_p,ML_Parameters ml_p, Dataset *data, CDF_estim
         abc_pl[l].eps = ml_p.eps_l[l];
         abc_pl[l].support = (SSAL_real_t *)malloc(abc_p.k*2*sizeof(double));
         memcpy(abc_pl[l].support,abc_p.support,abc_p.k*2*sizeof(SSAL_real_t));
-        //abc_pl[l].nacc = ml_p.Nl[l];
-        abc_pl[l].nacc = 200; /*debug*/
+        abc_pl[l].nacc = ml_p.Nl[l];
+        //abc_pl[l].nacc = 200; /*debug*/
     }
 
-
+    l=0;
     /*allocate expectations*/
     if ((E = (double*) malloc(M->G.numPoints*sizeof(double))) == NULL)
     {
@@ -97,6 +97,38 @@ int dmlabccdfs(ABC_Parameters abc_p,ML_Parameters ml_p, Dataset *data, CDF_estim
     {
         M->F[j] = E[j];
     }
+#if defined(__CHECKPOINT__)
+        {
+            FILE *fp;
+            fp =fopen(CHECKPOINT_FILENAME,"a");
+            /*save CDF state ... the Grid can be restored from main code*/
+            fprintf(fp,"%d ",l);
+            for (j=0;j<M->G.numPoints;j++)
+            {
+                fprintf(fp," %lg",M->F[j]);
+            }
+            fprintf(fp,"\n");
+            /* save current empirical support*/
+            fprintf(fp,"%d %d",l,abc_p.k);
+            for (j=0;j<2*abc_p.k;j++)
+            {
+                fprintf(fp," %lg",abc_pl[l].support[j]);
+            }
+            fprintf(fp,"\n");
+            /* save Nl sequence*/
+            fprintf(fp,"%d %d",l, ml_p.L+1);
+            for (j=0;j<=ml_p.L;j++)
+            {
+                fprintf(fp," %d",ml_p.Nl[j]);
+            }
+            fprintf(fp,"\n");
+            /* save sim counter*/
+            fprintf(fp,"%d %d\n",l,sim_counter);
+            fclose(fp);
+        }
+#endif
+
+
     /*process bias updates*/
     for (l=1;l<=ml_p.L;l++)
     {
@@ -129,6 +161,36 @@ int dmlabccdfs(ABC_Parameters abc_p,ML_Parameters ml_p, Dataset *data, CDF_estim
         {
             M->F[j] += E[j];
         }
+#if defined(__CHECKPOINT__)
+        {
+            FILE *fp;
+            fp =fopen(CHECKPOINT_FILENAME,"a");
+            /*save CDF state ... the Grid can be restored from main code*/
+            fprintf(fp,"%d ",l);
+            for (j=0;j<M->G.numPoints;j++)
+            {
+                fprintf(fp," %lg",M->F[j]);
+            }
+            fprintf(fp,"\n");
+            /* save current empirical support*/
+            fprintf(fp,"%d %d",l,abc_p.k);
+            for (j=0;j<2*abc_p.k;j++)
+            {
+                fprintf(fp," %lg",abc_pl[l].support[j]);
+            }
+            fprintf(fp,"\n");
+            /* save Nl sequence*/
+            fprintf(fp,"%d %d",l, ml_p.L+1);
+            for (j=0;j<=ml_p.L;j++)
+            {
+                fprintf(fp," %d",ml_p.Nl[j]);
+            }
+            fprintf(fp,"\n");
+            /* save sim counter*/
+            fprintf(fp,"%d %d\n",l,sim_counter);
+            fclose(fp);
+        }
+#endif
 
     }
 
