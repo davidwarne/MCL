@@ -42,12 +42,13 @@ double rho(Dataset *data, Dataset *data_s)
 int prior(unsigned int dim, unsigned int nsamples, double* support,double * theta)
 {
     theta[0] = durngus(0.0,5.0);/*alpha: birth rate*/
-    theta[1] = durngus(0.0,theta[0]);/*delta: death rate*/
+  //  theta[1] = durngus(0.0,theta[0]);/*delta: death rate*/
+    theta[1] = durngus(0.0,5.0);/*delta: death rate*/
     theta[2] = durngns(0.198,0.06735);/*theta: muation rate*/
-    while (theta[2] < 0.0)
-    {
+//    while (theta[2] < 0.0)
+//    {
         theta[2] = durngns(0.198,0.06735);/*theta: muation rate*/
-    }
+//    }
     return 0;
 }
 
@@ -77,10 +78,18 @@ int simulate(void *sim,double * theta, Dataset * data_s)
     unsigned int i,j,event;
     double *gH;
    
+    sim_counter++;
     n = 473;
     N_stop = 10000;
 
     gH = (double*)data_s->fields[0].data_array;
+
+    if (theta[2] < 0.0 || theta[1] > theta[0])
+    {
+        gH[0] = 0;
+        gH[1] = 0;
+        return 0;
+    }
 
     /*initialise  model*/
     X = (double *)malloc(N_stop*sizeof(double));
@@ -169,7 +178,6 @@ int simulate(void *sim,double * theta, Dataset * data_s)
         }
     }
     gH[2] = (double)n;
-    sim_counter++;
     free(X);
     free(x);
     return 0;
@@ -178,7 +186,10 @@ int simulate(void *sim,double * theta, Dataset * data_s)
 /*transition kernel and PDF*/
 int kernel(unsigned int dim,double *theta, double *theta_prop)
 {
-    double lambda[9] = {0.5,0.0,0.0,0.45,0.217945,0.0,0.0,0.0,0.015};
+    /*Note Sigma = Lambda * Lambda^T*/
+    double lambda[9] = {0.5,0.0,0.0,0.45,0.217945,0.0,0.0,0.0,0.015}; /*lambda from Tanaka*/
+    //double lambda[9] = {0.5,0.0,0.0,0.0,0.5,0.0,0.0,0.0,0.015}; /*niave lambda with not corralation*/
+    //double lambda[9] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0}; /*really bad choice*/
     double temp[3];
     durngmvns(3,theta,lambda,temp,theta_prop);
     while (theta_prop[0] < 0.0 || theta_prop[1] < 0.0 || theta_prop[2] < 0.0)
@@ -189,8 +200,13 @@ int kernel(unsigned int dim,double *theta, double *theta_prop)
 double kernelPDF(unsigned int dim,double *theta, double *theta_prop)
 {
     
-    double sigma_inv[9] = {21.0526,-18.9474,0.0,-18.9474,21.0526,0.0,0.0,0.0,4444.4445};
+    double sigma_inv[9] = {21.0526,-18.9474,0.0,-18.9474,21.0526,0.0,0.0,0.0,4444.4445}; /*from Tanaka*/
     double denom = 0.025744109307595; /*sqrt((2pi)^3 * det(Sigma)*/
+    //double sigma_inv[9] = {4.0,0.0,0.0,0.0,4.0,0.0,0.0,0.0,5000.0}; /*no correlation*/
+    
+    //double denom = 0.055683279968317; /*sqrt((2pi)^3 * det(Sigma)*/
+    //double sigma_inv[9] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0}; /*really bad choice*/
+    //double denom = 15.749609945722419; /*sqrt((2pi)^3 * det(Sigma)*/
     double x[3];
     double y[3];
     double z;
@@ -228,7 +244,7 @@ int main(int argc, char ** argv)
     double theta0;
     theta0 =0;
     /*only 2 args*/
-    if (argc  < 3)
+    if (argc  < 4)
     {
         fprintf(stderr,"Usage: %s N eps\n",argv[0]);
     }
@@ -245,10 +261,10 @@ int main(int argc, char ** argv)
         abc_p.p = &prior;
         abc_p.pd = &priorPDF;
         abc_p.s = &simulate;
+        smc_p.T = (unsigned int)atoi(argv[3]);
     }
  
     /*set up SMC parameters*/
-    smc_p.T = 10;
     smc_p.eps_t = (double*)malloc(smc_p.T*sizeof(double));
     smc_p.eps_t[0] = 1.0;
     smc_p.eps_t[smc_p.T-1] = abc_p.eps;

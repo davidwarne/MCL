@@ -125,6 +125,25 @@ struct CDF_estimate_struct {
 };
 typedef struct CDF_estimate_struct CDF_estimate;
 
+#define SUB2IND(sub,dim,D,ind) {\
+    int k;\
+    (ind) = 0;\
+    for (k=(dim)-1;k>=0;k--) {\
+        (ind) *= (D);\
+        (ind) += (sub)[k];\
+    }\
+}
+
+#define IND2SUB(ind,dim,D,sub) {\
+    int k, ind_tmp; \
+    ind_tmp = (ind); \
+    for (k=0;k<(dim);k++) {\
+        (sub)[k] = ind_tmp % (D); \
+        ind_tmp = ind_tmp / (D); \
+    }\
+}
+
+
 /*ABC CDF estimators*/
 //int sabccdfs(SSAL_Simulation *,ABC_Parameters,  float *, int, float *,float *,float *);
 
@@ -150,4 +169,7 @@ int dmcint(unsigned int, unsigned int, double *, double*, double (*)(int , doubl
 int dmcintd(unsigned int, unsigned int, double *, double *, double *,double (*)(int , double *, double*), double *, double *); 
 
 Dataset *copyDataset(Dataset *);
+void monotone(CDF_estimate *, CDF_estimate *);
+double cdf2pmf(CDF_estimate *, double *);
+int dmlabcnlps(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *data, CDF_estimate *M, double *Yl, double *Ylu, double *Fl);
 #endif

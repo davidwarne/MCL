@@ -209,16 +209,18 @@ int main(int argc, char ** argv)
     CDF_estimate M;
     clock_t start_t, end_t;
     double time;
-    unsigned int i,l;
-    /*only 3 args*/
+    unsigned int i,l,t;
+    unsigned int numTrials;
+    double *Yl,*Ylu,*Fl,*EYl,*EYlu,*EFl,*EYl2,*EYlu2,*EFl2;
+    /*only 2 args*/
     if (argc  < 4)
     {
-        fprintf(stderr,"Usage: %s N eps\n",argv[0]);
+        fprintf(stderr,"Usage: %s N eps numTrials\n",argv[0]);
     }
     else
     {
         /*set up ABC params*/
-        abc_p.nacc = (unsigned int)atoi(argv[1]);
+        mlmc_p.presample_trials = (unsigned int)atoi(argv[1]);
         abc_p.eps = (double)atof(argv[2]);
         abc_p.nmax = 0;
         abc_p.k = 3;
@@ -234,9 +236,11 @@ int main(int argc, char ** argv)
         abc_p.p = &prior;
         abc_p.pd = NULL;
         abc_p.s = &simulate;
-        mlmc_p.L = atoi(argv[3]);
+        numTrials = (unsigned int)atoi(argv[3]);
     }
  
+    /*set up MLMC parameters*/
+    mlmc_p.L = 10 ;
     mlmc_p.eps0 = 1.0;
     mlmc_p.eps_l = (double*)malloc((mlmc_p.L+1)*sizeof(double));
     mlmc_p.Nl = (unsigned int*)malloc((mlmc_p.L+1)*sizeof(unsigned int));
@@ -249,7 +253,6 @@ int main(int argc, char ** argv)
     }
     mlmc_p.target_RMSE = 0.1;
     mlmc_p.presample = 1; 
-    mlmc_p.presample_trials = 100; 
 
     /*initialise grid*/
     deltas[0] = (abc_p.support[3] - abc_p.support[0])/99.0; 
@@ -281,38 +284,76 @@ int main(int argc, char ** argv)
 
 
 
-    sim_counter = 0; /*for performance metric*/
-    /*determine sample number scaling for MLMC*/
-    start_t = clock();
-    dmlabcnls(abc_p,mlmc_p.presample_trials,mlmc_p,&data,&M,mlmc_p.Nl,Nl_scale);
-    end_t = clock();
-    time = ((double)(end_t - start_t))/((double)CLOCKS_PER_SEC);
-    /*write output*/
-    fprintf(stderr,"\"Level\",\"eps_l\",\"N_l\",\"N_l_s\",\"SEC\",\"NSIMS\"\n");
-    for (l=0;l<=mlmc_p.L;l++)
+    Yl = (double*)malloc((mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+    Ylu = (double*)malloc((mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+    Fl = (double*)malloc((mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+    
+    EYl = (double*)malloc((mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+    EYlu = (double*)malloc((mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+    EFl = (double*)malloc((mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+    EYl2 = (double*)malloc((mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+    EYlu2 = (double*)malloc((mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+    EFl2 = (double*)malloc((mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+    
+    memset(EYl,0,(mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+    memset(EYlu,0,(mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+    memset(EFl,0,(mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+    memset(EYl2,0,(mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+    memset(EYlu2,0,(mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+    memset(EFl2,0,(mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+
+    for (t=0;t<numTrials;t++)
     {
-        fprintf(stderr,"%u,%g,%u,%g,%g,%u\n",l,mlmc_p.eps_l[l],mlmc_p.Nl[l],Nl_scale[l],time,sim_counter);
+        memset(Yl,0,(mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+        memset(Ylu,0,(mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+        memset(Fl,0,(mlmc_p.L+1)*(M.G.numPoints)*sizeof(double));
+        start_t = clock();
+        //dmlabcnls(abc_p,mlmc_p.presample_trials,mlmc_p,&data,&M,mlmc_p.Nl,Nl_scale);
+        dmlabcnlps(abc_p,mlmc_p.presample_trials,mlmc_p,&data,&M,Yl,Ylu,Fl);
+        for (i=0;i<(mlmc_p.L+1)*M.G.numPoints;i++){
+            EYl[i] += Yl[i];
+            EYlu[i] += Ylu[i];
+            EFl[i] += Fl[i];
+            EYl2[i] += Yl[i]*Yl[i];
+            EYlu2[i] += Ylu[i]*Ylu[i];
+            EFl2[i] += Fl[i]*Fl[i];
+        }
+        end_t = clock();
+
+        time = ((double)(end_t - start_t))/((double)CLOCKS_PER_SEC);
+        fprintf(stderr,"\nSim %d or %d time = %g secs.\n",t+1,numTrials,time);
     }
-    for (l=0;l<=mlmc_p.L;l++)
-    {
-        mlmc_p.Nl[l] = (Nl_scale[l]/Nl_scale[mlmc_p.L])*abc_p.nacc;
+    for (i=0;i<(mlmc_p.L+1)*M.G.numPoints;i++){
+        EYl[i] /= (double)numTrials;
+        EYlu[i] /= (double)numTrials;
+        EFl[i] /= (double)numTrials;
+        EYl2[i] /= (double)numTrials;
+        EYlu2[i] /= (double)numTrials;
+        EFl2[i] /= (double)numTrials;
     }
-    fprintf(stderr,"\"Level\",\"eps_l\",\"N_l\",\"N_l_s\",\"SEC\",\"NSIMS\"\n");
-    for (l=0;l<=mlmc_p.L;l++)
-    {
-        fprintf(stderr,"%u,%g,%u,%g,%g,%u\n",l,mlmc_p.eps_l[l],mlmc_p.Nl[l],Nl_scale[l],time,sim_counter);
+    for (i=0;i<(mlmc_p.L+1)*M.G.numPoints;i++){
+        EYl2[i] -= EYl[i]*EYl[i];
+        EYlu2[i] -= EYlu[i]*EYlu[i];
+        EFl2[i] -= EFl[i]*EFl[i];
     }
-    /*run MLABC*/
-    sim_counter = 0; /*for performance metric*/
-    start_t = clock();
-    dmlabccdfs(abc_p,mlmc_p,&data,&M);
-    end_t = clock();
-    time = ((double)(end_t - start_t))/((double)CLOCKS_PER_SEC);
-    /*write ouput*/
-    fprintf(stdout,"\"alpha\",\"delta\",\"theta\",\"F\",\"SEC\",\"NSIMS\"\n");
-    for (i=0;i<M.G.numPoints;i++)
-    {
-        fprintf(stdout,"%g,%g,%g,%g,%g,%u\n",M.G.coords[i*3],M.G.coords[i*3+1],M.G.coords[i*3+2],M.F[i],time,sim_counter);
+
+    /*write results*/
+    fprintf(stdout,"\"Level\",\"V Y_l\",\"V Y_l uc\",\"V F_l sl\"\n");
+    for (l=0;l<mlmc_p.L+1;l++){
+        double VYl,VYlu,VFl;
+        VYl = EYl2[l*M.G.numPoints];
+        for (i=0;i<M.G.numPoints;i++){
+            VYl = (VYl < EYl2[l*M.G.numPoints + i]) ?  EYl2[l*M.G.numPoints + i] : VYl;
+        }
+        VYlu = EYlu2[l*M.G.numPoints];
+        for (i=0;i<M.G.numPoints;i++){
+            VYlu = (VYlu < EYlu2[l*M.G.numPoints + i]) ?  EYlu2[l*M.G.numPoints + i] : VYlu;
+        }
+        VFl = EFl2[l*M.G.numPoints];
+        for (i=0;i<M.G.numPoints;i++){
+            VFl = (VFl < EFl2[l*M.G.numPoints + i]) ?  EFl2[l*M.G.numPoints + i] : VFl;
+        }
+        fprintf(stdout,"%d, %g,%g,%g\n",l,VYl,VYlu,VFl);
     }
     return 0;
 }

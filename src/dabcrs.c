@@ -47,10 +47,24 @@ int dabcrs(ABC_Parameters abc_p, Dataset * data, double * theta,double *rho)
             
             if (d <= abc_p.eps)
             {
+#if defined(__CHECKPOINT__)
+                {
+                    FILE *fp;
+                    fp = fopen(CHECKPOINT_FILENAME,"a");
+                    fprintf(fp,"%d",j);
+                    for (i=0;i<abc_p.k;i++)
+                    {
+                        fprintf(fp,",%lg",theta[j*abc_p.k + i]);
+                    }
+                    fprintf(fp,",%d\n",sim_counter);
+                    fclose(fp);
+                }
+#endif
                 /*copy accepted result to output arrays*/
                 if (rho != NULL) 
                     rho[j] = d;
                 j++;
+
             }
         }
     }

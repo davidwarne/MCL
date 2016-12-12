@@ -42,12 +42,13 @@ double rho(Dataset *data, Dataset *data_s)
 int prior(unsigned int dim, unsigned int nsamples, double* support,double * theta)
 {
     theta[0] = durngus(0.0,5.0);/*alpha: birth rate*/
-    theta[1] = durngus(0.0,theta[0]);/*delta: death rate*/
+    //theta[1] = durngus(0.0,theta[0]);/*delta: death rate*/
+    theta[1] = durngus(0.0,5.0);/*delta: death rate*/
     theta[2] = durngns(0.198,0.06735);/*theta: muation rate*/
-    while (theta[2] < 0.0)
-    {
-        theta[2] = durngns(0.198,0.06735);/*theta: muation rate*/
-    }
+    //while (theta[2] < 0.0)
+    //{
+    theta[2] = durngns(0.198,0.06735);/*theta: muation rate*/
+    //}
     return 0;
 }
 
@@ -77,10 +78,19 @@ int simulate(void *sim,double * theta, Dataset * data_s)
     unsigned int i,j,event;
     double *gH;
    
+    
+    sim_counter++;
     n = 473;
     N_stop = 10000;
 
     gH = (double*)data_s->fields[0].data_array;
+
+    if (theta[2] < 0.0 || theta[1] > theta[0])
+    {
+        gH[0] = 0;
+        gH[1] = 0;
+        return 0;
+    }
 
     /*initialise  model*/
     X = (double *)malloc(N_stop*sizeof(double));
@@ -169,7 +179,6 @@ int simulate(void *sim,double * theta, Dataset * data_s)
         }
     }
     gH[2] = (double)n;
-    sim_counter++;
     free(X);
     free(x);
     return 0;
