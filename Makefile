@@ -1,7 +1,7 @@
 #!/bin/make
 
 CC = icc
-#OPTS = -g -mkl=sequential -D__SERIAL__ -D__FLOAT64__ 
+#OPTS = -O2 -mkl=sequential -D__SERIAL__ -D__FLOAT64__ 
 OPTS = -O2 -mkl=sequential -D__SERIAL__ -D__FLOAT64__ -D__CHECKPOINT__ 
 #OPTS = -O2 -mkl=sequential -D__SERIAL__ -D__FLOAT64__  
 #CC = gcc

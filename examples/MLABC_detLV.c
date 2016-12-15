@@ -62,7 +62,7 @@ int prior(unsigned int dim, unsigned int nsamples, double* support,double * thet
         {
             for (j=0;j<dim;j++)
             {
-                theta[i*dim + j] = durngus(-10.0,10.0); 
+                theta[i*dim + j] = durngus(0.5,1.2); 
             }
         }
     }
@@ -169,10 +169,10 @@ int main(int argc, char ** argv)
         abc_p.nmax = 0;
         abc_p.k = 2;
         abc_p.support = (double*)malloc(4*sizeof(double));
-        abc_p.support[0] = -10.0;
-        abc_p.support[1] = -10.0;
-        abc_p.support[2] = 10.0;
-        abc_p.support[3] = 10.0;
+        abc_p.support[0] = 0.5;
+        abc_p.support[1] = 0.5;
+        abc_p.support[2] = 1.2;
+        abc_p.support[3] = 1.2;
         abc_p.sim = NULL;
         abc_p.rho = &rho;
         abc_p.p = &prior;
@@ -190,15 +190,20 @@ int main(int argc, char ** argv)
     mlmc_p.eps_l[4] = 4.3;
     mlmc_p.Nl = (unsigned int*)malloc((mlmc_p.L+1)*sizeof(unsigned int));
     Nl_scale = (double*)malloc((mlmc_p.L+1)*sizeof(double));
+    mlmc_p.target_RMSE = 0.1;
     mlmc_p.presample = 1; 
     mlmc_p.presample_trials = 100; 
     
     /*initialise grid: we define it only in */
-    double lb[2] = {0.5,0.5};
-    double ub[2] = {2.0,2.0};
-    deltas[0] = (ub[0] - lb[0])/999.0; 
-    deltas[1] = (ub[1] - lb[1])/999.0; 
-    M.G = GenNdGrid(2,lb,ub,1000,deltas);
+    //double lb[2] = {0.8,0.8};
+    //double ub[2] = {1.15,1.15};
+    //deltas[0] = (ub[0] - lb[0])/999.0; 
+    //deltas[1] = (ub[1] - lb[1])/999.0; 
+    //M.G = GenNdGrid(2,lb,ub,1000,deltas);
+    deltas[0] = (abc_p.support[2] - abc_p.support[0])/999.0; 
+    deltas[1] = (abc_p.support[3] - abc_p.support[1])/999.0; 
+   // deltas[1] = (ub[1] - lb[1])/999.0; 
+    M.G = GenNdGrid(abc_p.k,abc_p.support,abc_p.support + abc_p.k,1000,deltas);
     M.F = (double*)malloc(M.G.numPoints*sizeof(double)); 
     M.V = (double*)malloc(M.G.numPoints*sizeof(double)); 
     M.g = &g; 

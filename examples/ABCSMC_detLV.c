@@ -57,7 +57,7 @@ int prior(unsigned int dim, unsigned int nsamples, double* support,double * thet
     {
         for (j=0;j<dim;j++)
         {
-            theta[i*dim + j] = durngus(-10.0,10.0); 
+           theta[i*dim + j] = durngus(0.5,1.2); 
         }
     }
     return 0;
@@ -71,7 +71,7 @@ double priorPDF(unsigned int dim,double *theta)
     p = 1;
     for (i=0;i<dim;i++)
     {
-        p *= (1.0/20.0);
+        p *= (1.0/0.7);
     }
     return p; 
 }
