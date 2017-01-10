@@ -33,31 +33,12 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
     double *thetal, *thetalm1;
     double *rhol,*rholm1;
     double c;
-    
-
-    if (ml_p.presample == 0)
-    {
-        double gamma,beta,alpha,K,J,h;
-        gamma = ml_p.gamma;
-        beta = ml_p.beta;
-        alpha = ml_p.alpha;
-        K = (double)(ml_p.K);
-        J = (double)(M->G.numPoints);
-        h = ml_p.target_RMSE; 
-
-        if (gamma < beta)
-        {
-        }
-        else if (gamma == beta)
-        {
-        }
-        else
-        {
-            
-        }
-
-        return 0;
-    }
+    CDF_estimate *M_mon;
+    M_mon = (CDF_estimate*)malloc(sizeof(CDF_estimate));
+    M_mon->G = M->G;
+    M_mon->F = (double*)malloc(M_mon->G.numPoints*sizeof(double));
+    M_mon->V = (double*)malloc(M_mon->G.numPoints*sizeof(double));
+    M_mon->g = M->g;
 
     /* allocate sequence of ABC parameters*/
     abc_pl = (ABC_Parameters*)malloc((ml_p.L+1)*sizeof(ABC_Parameters));
@@ -114,19 +95,7 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
             }
         }
         else
-        {double *Etheta3;
-        double *Etheta4;
-
-            Etheta3 = (double *)malloc(abc_pl[l].k*sizeof(double));
-            Etheta4 = (double *)malloc(abc_pl[l].k*sizeof(double));
-            for (k=0;k<abc_pl[l].k;k++)
-            {
-                Etheta3[k] = 0;
-            }
-            for (k=0;k<abc_pl[l].k;k++){
-                Etheta4[k] = 0;
-            }
-
+        {
             memcpy(thetalm1,thetal,abc_pl[l-1].k*abc_pl[l-1].nacc*sizeof(double));
             memcpy(abc_pl[l].support,thetalm1,abc_pl[l].k*sizeof(double));
             memcpy(abc_pl[l].support+abc_pl[l].k,thetalm1,abc_pl[l].k*sizeof(double));
@@ -147,7 +116,7 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
                 }
             }
             /*sample coupled levels for bias correction terms*/
-            dabcrjs(abc_pl[l-l],abc_pl[l], data, M,thetalm1,thetal,rhol);
+            dabcrjs(abc_pl[l-l],abc_pl[l], data, M_mon,thetalm1,thetal,rhol);
             /* integrate the difference in smoothed indicator functions*/
             for (j=0;j<M->G.numPoints;j++)
             {
@@ -161,7 +130,6 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
                 for (k=0;k<abc_pl[l].k;k++)
                 {
                     double n = fabs(thetal[i*abc_pl[l].k + k] - thetalm1[i*abc_pl[l].k + k]);
-                    Etheta3[k] += thetal[i*abc_pl[l].k + k] - thetalm1[i*abc_pl[l].k + k];
                     if (n > d){
                         d = n;
                     }
@@ -169,38 +137,6 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
                 Etheta += d*d;
             }
             Etheta /= (double)abc_pl[l].nacc;
-           for (k=0;k<abc_pl[l].k;k++)
-           {
-               Etheta3[k] /= (double)abc_pl[l].nacc;
-           }
-           dabcrs(abc_pl[l-1], data,thetalm1, NULL);
-           for (i=0;i<abc_pl[l].nacc;i++)
-           {
-               double d;
-               d = 0;
-               for (k=0;k<abc_pl[l].k;k++)
-               {
-                   double n = fabs(thetal[i*abc_pl[l].k + k] - thetalm1[i*abc_pl[l].k + k]);
-                   Etheta4[k] += (thetal[i*abc_pl[l].k + k] - thetalm1[i*abc_pl[l].k + k]);
-                   if (n > d){
-                       d = n;
-                   }
-               }
-               Etheta2 += d*d;
-           }
-           Etheta2 /= (double)abc_pl[l].nacc;
-           for (k=0;k<abc_pl[l].k;k++)
-           {
-               Etheta4[k] /= (double)abc_pl[l].nacc ;
-           }
-
-           fprintf(stderr,"l = %d, E[|Th_l - Th_{l-1}|_infty^2] = %g uncor %g\n",l,Etheta,Etheta2); 
-           fprintf(stderr,"l = %d, E[Th_l - Th_{l-1}] = ",l); 
-           for (k=0;k<abc_pl[l].k;k++)
-           {
-               fprintf(stderr,"[%f u %f] ",Etheta3[k],Etheta4[k]); 
-           }
-           fprintf(stderr,"\n");
             sigma2[l] = Etheta;
         }
         end_t = clock();
@@ -209,6 +145,7 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
         {
             M->F[j] += E[j];
         }
+        monotone(M,M_mon);
 
         if (end_t - start_t >= 2*MINCLOCKS)
         {
@@ -231,6 +168,8 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
     {
         Nl[l] = (unsigned int)ceil(log((double)M->G.numPoints)*c*(sqrt(sigma2[l])/sqrt(times[l]))/(ml_p.target_RMSE*ml_p.target_RMSE));
     }
+
+    /*convert to relative scalings*/
     if (Wl != NULL)
     {
         double W_max;
@@ -246,10 +185,10 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
             Wl[l] /= W_max;
         }
     }
+
     for (l=0;l<=ml_p.L;l++)
     {
         Nl[l] = (Nl[l] < trials) ? trials : Nl[l];
-//        fprintf(stderr,"N_%d = %d, E[|theta_%d - theta_%d-1|_infty^2] = %g, eps_%d = %g,c_%d = %g\n",l,Nl[l],l,sigma2[l],l,ml_p.eps_l[l],l,times[l]);
     }
 
     free(times);
@@ -260,3 +199,4 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
     free(abc_pl);
     return 0;
 }
+

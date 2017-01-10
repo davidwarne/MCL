@@ -39,6 +39,12 @@ int dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, CDF_est
     double *rhol,*rholm1;
     unsigned int i,j,l,k;
    
+    CDF_estimate *M_mon;
+    M_mon = (CDF_estimate*)malloc(sizeof(CDF_estimate));
+    M_mon->G = M->G;
+    M_mon->F = (double*)malloc(M_mon->G.numPoints*sizeof(double));
+    M_mon->V = (double*)malloc(M_mon->G.numPoints*sizeof(double));
+    M_mon->g = M->g;
     max_n = 0;
     for (l=0;l<=ml_p.L;l++)
     {
@@ -97,6 +103,7 @@ int dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, CDF_est
     {
         M->F[j] = E[j];
     }
+    monotone(M,M_mon);
 #if defined(__CHECKPOINT__)
         {
             FILE *fp;
@@ -151,7 +158,7 @@ int dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, CDF_est
                 }
             }
         }
-        dabcrjs(abc_pl[l-1],abc_pl[l],data,M, thetalm1,thetal,rhol);
+        dabcrjs(abc_pl[l-1],abc_pl[l],data,M_mon, thetalm1,thetal,rhol);
         for (j=0;j<M->G.numPoints;j++)
         {
             dmcintd(abc_pl[l].nacc,abc_pl[l].k,thetal,thetalm1,M->G.coords+j*M->G.dim,M->g,E+j,V+j);
@@ -161,6 +168,7 @@ int dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, CDF_est
         {
             M->F[j] += E[j];
         }
+        monotone(M,M_mon);
 #if defined(__CHECKPOINT__)
         {
             FILE *fp;
@@ -193,6 +201,8 @@ int dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, CDF_est
 #endif
 
     }
+    
+    memcpy(M->F,M_mon->F,M->G.numPoints*sizeof(double));
 
     free(thetal);
     free(thetalm1);
