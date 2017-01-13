@@ -24,27 +24,54 @@
  * @param N the number of iid samples.
  * @param k dimensionality of X random vector.
  * @param X an Nxk array of iid samples. 
- * @param E output of the expectation.
- * @param V output of the variance.
+ * @param E output of the expectation (vector of length k).
+ * @param V output of the variance (scalar).
  */
 int 
-dmcintv(unsigned int N,unsigned int k, double *X, double *Y, double *params, 
-        double (*f)(int, double *,double*), double *E, double *V)
+dmcintv(unsigned int N,unsigned int k, double *X,double *E, double *V)
 {
-    unsigned int i;
+    unsigned int i,j;
     double fX_i,fY_i;
     
-    *E = 0;
-    *V = 0;
+    for (j=0;j<k;j++)
+    {
+        E[j] = 0;
+    }
     for (i=0;i<N;i++)
     {
-        fX_i = (*f)(k,X + i*k,params);
-        *E += fX_i - fY_i;
-        *V += (fX_i - fY_i)*(fX_i - fY_i);
+        for (j=0;j<k;j++)
+        {
+            E[j] += X[i*k +j];
+        }
     }
-    
-    *E /= (double)N;
+   
+    for (j=0;j<k;j++)
+    {
+        E[k] /= (double)N;
+    }
+
+    if (V == NULL)
+    {
+        return 0;
+    }
+
+    /* compute variance Var[X] = E[|X - E[X]|_\infty^2]*/
+    for (j=0;j<k;j++)
+    {
+        *V = 0;
+    }
+
+    for (i=0;i<N;i++)
+    {
+        double norm_inf,d;
+        norm_inf = 0;
+        for (j=0;j<k;j++)
+        {
+            d = fabs(X[i*k + j] - E[j]);
+            norm_inf = (norm_inf < d) ? d : norm_inf;
+        }
+        *V += norm_inf;
+    }
     *V /= (double)N;
-    *V = ((double)N)*(*V - (*E)*(*E))/((double) N-1);
-    //printf("%d %f %f\n",N,*E,*V);
+    return 0;
 }

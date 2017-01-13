@@ -229,9 +229,14 @@ int
 dmcintd(unsigned int, unsigned int, double *, double *, double *,
         double (*)(int , double *, double*), double *, double *); 
 
+int 
+dmcintv(unsigned int, unsigned int, double *,double *, double *);
+
+/*data manipulation*/
 Dataset *
 copyDataset(Dataset *);
 
+/*some utilies*/
 void 
 monotone(CDF_estimate *, CDF_estimate *);
 
