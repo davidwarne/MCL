@@ -20,7 +20,9 @@
  * @brief Monte Carlo Integration differences
  * @details Approximates E[f(X) - f(Y)] and 
  *      V[f(X)] = E[(E[f(X)- f(Y)] - f(X) - f(Y))^2] using 
- *      mu = 1/N \sum_{i=0}^N f(X^(i))-f(Y^(i)) where X^(i) and Y^(i) are iid samples of two  user provided random vectors in R^k and f is a scalar valued function.
+ *      mu = 1/N \sum_{i=0}^N f(X^(i))-f(Y^(i)) 
+ * where X^(i) and Y^(i) are iid samples of two  user provided random vectors 
+ * in R^k and f is a scalar valued function.
  * @note Y^(i) and X^(i) may be coupled such that a variance reduction is obtained.
  *
  * @param N the number of iid samples.
@@ -30,8 +32,11 @@
  * @param f the function to integrate.
  * @param E output of the expectation.
  * @param V output of the variance.
+ *
  */
-int dmcintd(unsigned int N,unsigned int k, double *X, double *Y, double *params, double (*f)(int, double *,double*), double *E, double *V)
+int 
+dmcintd(unsigned int N,unsigned int k, double *X, double *Y, double *params, 
+        double (*f)(int, double *,double*), double *E, double *V)
 {
     unsigned int i;
     double fX_i,fY_i;
@@ -49,6 +54,5 @@ int dmcintd(unsigned int N,unsigned int k, double *X, double *Y, double *params,
     *E /= (double)N;
     *V /= (double)N;
     *V = ((double)N)*(*V - (*E)*(*E))/((double) N-1);
-    //printf("%d %f %f\n",N,*E,*V);
 }
 

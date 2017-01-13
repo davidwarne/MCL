@@ -19,7 +19,9 @@
 
 /**
  * @brief ABC rejection sampling of joint distribution
- * @deials approximation to strong converging sequence as per Warne et al. used of MLABC bias correction step. 
+ * @deials approximation to strong converging sequence as per Warne et al. 
+ * used of MLABC bias correction step. 
+ *
  * @param abc_p_c ABC parameters for coarse level
  * @param abc_p_f ABC parameters for fine level
  * @param data dataset X_d
@@ -27,7 +29,9 @@
  * @param theta_f array of accepted posterior samples at fine level
  * @param rho_f values of rho
  */
-int dabcrjs(ABC_Parameters abc_p_c, ABC_Parameters abc_p_f,Dataset *data, CDF_estimate *F_c, double *theta_c, double *theta_f, double * rho_f)
+int 
+dabcrjs(ABC_Parameters abc_p_c, ABC_Parameters abc_p_f,Dataset *data, 
+        CDF_estimate *F_c, double *theta_c, double *theta_f, double * rho_f)
 {
     size_t *G_LUT; /*grid lookup*/
     size_t ind_f;
@@ -38,8 +42,7 @@ int dabcrjs(ABC_Parameters abc_p_c, ABC_Parameters abc_p_f,Dataset *data, CDF_es
     unsigned int i,j,k;
     /* use standard ABC rejection for fine level sample*/
     dabcrs(abc_p_f,data,theta_f,rho_f);
-    //dabcrs(abc_p_c,data,theta_c,NULL);
-    //return 0;
+    
     G_LUT = (size_t *)malloc(abc_p_f.nacc*sizeof(size_t));
 
     F_tmp = (double*)malloc(F_c->G.numPoints*sizeof(double));
@@ -55,10 +58,14 @@ int dabcrjs(ABC_Parameters abc_p_c, ABC_Parameters abc_p_f,Dataset *data, CDF_es
             tf = 1;
             for (k=0;k<abc_p_f.k;k++)
             {
-                tf = tf && ( theta_f[i*abc_p_f.k + k] <= F_c->G.coords[j*abc_p_f.k + k]);
-                tf = tf && (theta_f[i*abc_p_f.k + k] > F_c->G.coords[j*abc_p_f.k + k] - F_c->G.deltas[k]);
+                tf = tf && 
+                   (theta_f[i*abc_p_f.k + k] <= F_c->G.coords[j*abc_p_f.k + k]);
+                tf = tf && 
+                    (theta_f[i*abc_p_f.k + k] > 
+                           (F_c->G.coords[j*abc_p_f.k + k] - F_c->G.deltas[k]));
             }
-            F_tmp[j] += (*(F_c->g))(abc_p_f.k,theta_f +i*abc_p_f.k,F_c->G.coords + j*F_c->G.dim);
+            F_tmp[j] += (*(F_c->g))(abc_p_f.k,theta_f +i*abc_p_f.k,
+                                    F_c->G.coords + j*F_c->G.dim);
             if (tf == 1)
             {
                 G_LUT[i] = j;
@@ -80,7 +87,8 @@ int dabcrjs(ABC_Parameters abc_p_c, ABC_Parameters abc_p_f,Dataset *data, CDF_es
             sub_f[k] = ind_f % F_c->G.D;
             ind_f = ind_f / F_c->G.D;
         }
-        /*locate grid point in coarse level estimator closest wrt marginal probabilities*/
+        /*locate grid point in coarse level estimator closest wrt marginal 
+         * probabilities*/
         for (k=0;k<abc_p_f.k;k++)
         {
             int d;
@@ -89,7 +97,8 @@ int dabcrjs(ABC_Parameters abc_p_c, ABC_Parameters abc_p_f,Dataset *data, CDF_es
             {
                 double dist;
                 
-                dist = fabs(F_tmp[F_c->G.offsets[k] + sub_f[k]*F_c->G.incs[k]] - F_c->F[F_c->G.offsets[k] + d*F_c->G.incs[k]]);
+                dist = fabs(F_tmp[F_c->G.offsets[k] + sub_f[k]*F_c->G.incs[k]] 
+                            - F_c->F[F_c->G.offsets[k] + d*F_c->G.incs[k]]);
                 if (dist < dist_min)
                 {
                     dist_min = dist;
@@ -104,13 +113,13 @@ int dabcrjs(ABC_Parameters abc_p_c, ABC_Parameters abc_p_f,Dataset *data, CDF_es
             ind_c += sub_c[k]*F_c->G.incs[k];
         }
 
-        /*select this point + white noise*/
+        /*select this point + perturbation*/
         for( k=0;k<abc_p_c.k;k++)
         {
-           theta_c[i*abc_p_c.k + k] = F_c->G.coords[ind_c*abc_p_c.k + k] + durngus(-1.0,1.0)*(F_c->G.deltas[k]);
+           theta_c[i*abc_p_c.k + k] = F_c->G.coords[ind_c*abc_p_c.k + k] 
+                                         + durngus(-1.0,1.0)*(F_c->G.deltas[k]);
         }
     }
-    //exit(1);
     return 0;
 }
 

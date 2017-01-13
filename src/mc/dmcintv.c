@@ -27,7 +27,9 @@
  * @param E output of the expectation.
  * @param V output of the variance.
  */
-int dmcintv(unsigned int N,unsigned int k, double *X, double *Y, double *params, double (*f)(int, double *,double*), double *E, double *V)
+int 
+dmcintv(unsigned int N,unsigned int k, double *X, double *Y, double *params, 
+        double (*f)(int, double *,double*), double *E, double *V)
 {
     unsigned int i;
     double fX_i,fY_i;

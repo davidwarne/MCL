@@ -55,10 +55,7 @@ void GetCmdLineArgs(int,char **);
 /*program entry point*/
 int main(int argc, char ** argv)
 {
-    SSAL_Model model;
-    SSAL_ChemicalReactionNetwork *CRN_ptr;
-    SSAL_RealisationSimulation *RS_ptr;
-    SSAL_Simulation sim;
+    SSAL_CRN CRN;
     CDF_estimate M;
     double *T;
     double *X_d;
@@ -78,27 +75,26 @@ int main(int argc, char ** argv)
     SSAL_Initialise(argc,argv);
     
     /*read model defintion*/
-    model = SSAL_ImportLSBML(model_filename);
-    CRN_ptr = (SSAL_ChemicalReactionNetwork *)model.model;
-    SSAL_WriteChemicalReactionNetwork(stdout,*CRN_ptr);
+    CRN = SSAL_ImportLSBML(model_filename);
+    SSAL_WriteChemicalReactionNetwork(stdout,CRN);
     
     /*read data*/
-    dataset = ImportData(data_filename,CRN_ptr->N);
+    dataset = ImportData(data_filename,CRN.N);
     T = (double*)dataset.fields[0].data_array;
     X_d = (double*)dataset.fields[1].data_array;
 
     /*allocate prior dist bounds*/
-    a = (SSAL_real_t *)malloc(CRN_ptr->M*sizeof(SSAL_real_t));
-    b = (SSAL_real_t *)malloc(CRN_ptr->M*sizeof(SSAL_real_t));
-    deltas = (SSAL_real_t *)malloc(CRN_ptr->M*sizeof(SSAL_real_t));
-    for (j=0;j<CRN_ptr->M;j++)
+    a = (SSAL_real_t *)malloc(CRN.M*sizeof(SSAL_real_t));
+    b = (SSAL_real_t *)malloc(CRN.M*sizeof(SSAL_real_t));
+    deltas = (SSAL_real_t *)malloc(CRN.M*sizeof(SSAL_real_t));
+    for (j=0;j<CRN.M;j++)
     {
         a[j] = 0;
-        b[j] = (CRN_ptr->c[j])*scalefactor;
+        b[j] = (CRN.c[j])*scalefactor;
         deltas[j] = smoothfactor*(b[j] - a[j])/((SSAL_real_t)(D -1));
     }
     /*gamma = number of timesteps, J = number of indicator functions*/
-    ml_p.gamma = dataset.fields[0].numRows*CRN_ptr->N;
+    ml_p.gamma = dataset.fields[0].numRows*CRN.N;
     ml_p.eps_l = (SSAL_real_t*)malloc((ml_p.L+1)*sizeof(SSAL_real_t));
     /*init epsilon sequence*/
     ml_p.eps_l[0] =  ml_p.eps0;
@@ -110,30 +106,14 @@ int main(int argc, char ** argv)
     /*initialise equivalent ABC parameters*/
     abc_p.nmax = 0;
     abc_p.eps = ml_p.eps_l[ml_p.L]; 
-    abc_p.k = CRN_ptr->M;
+    abc_p.k = CRN.M;
     abc_p.rho = &rho;
     abc_p.p = &prior;
     abc_p.s = &simulate_model;
-    abc_p.sim = (void*)&sim;
-    
-    /*build simulation*/
-    sim = SSAL_CreateRealisationsSim(&model,CRN_ptr->N,NULL,1,dataset.fields[0].numRows,T,CRN_ptr->X0);
-    RS_ptr = (SSAL_RealisationSimulation *)(sim.sim);
-    /*generate simulation data*/
-    SSAL_Simulate(&sim,SSAL_ESSA_GILLESPIE_SEQUENTIAL,NULL);
-    for (i=0;i<dataset.fields[0].numRows;i++)
-    {
-        fprintf(stdout,"X_d(%f) = ",T[i]);
-        for (j=0;j<dataset.fields[1].numRows;j++)
-        {
-            fprintf(stdout," %f ",X_d[j*dataset.fields[1].numCols + i]);
-            fprintf(stdout," %f ",RS_ptr->output[j*dataset.fields[1].numCols + i]);
-        }
-        fprintf(stdout,"\n");
-    }
+    abc_p.sim = (void*)&CRN;
 
     /* Generate Grid and memory for CDF*/
-    M.G = GenNdGrid(CRN_ptr->M,a,b,D,deltas);
+    M.G = GenNdGrid(CRN.M,a,b,D,deltas);
     M.F = (double*)malloc(M.G.numPoints*sizeof(double)); 
     M.V = (double*)malloc(M.G.numPoints*sizeof(double)); 
     M.g = &g; 
@@ -153,7 +133,7 @@ int main(int argc, char ** argv)
             fprintf(stdout,"d_%d = %g\n",i,M.G.deltas[i]);
         }
         /*trial samples to compute N_l*/
-        dmlabcnls(abc_p,1000,ml_p,&dataset,&M,ml_p.Nl,NULL);
+        dmlabcnls(abc_p,100,ml_p,&dataset,&M,ml_p.Nl,NULL);
         
         for (l=0;l<=ml_p.L;l++)
         {
@@ -360,20 +340,23 @@ int prior(unsigned int k, unsigned int numsamples,SSAL_real_t * support, SSAL_re
 int simulate_model(void *sim, SSAL_real_t * theta, Dataset * D_s)
 {
     SSAL_real_t * X_s;
-    SSAL_Simulation *sim_ptr;
-    SSAL_RealisationSimulation *RS_ptr;
-    SSAL_ChemicalReactionNetwork *CRN_ptr;
-
+    SSAL_CRN *CRN_ptr;
+    double *T;
+    int NT;
+    int i;
+    // extract times from actual dataset
+    T = (double*)dataset.fields[0].data_array;
+    NT = (int)dataset.fields[0].numRows;
     /*cast pointers*/
     X_s = (SSAL_real_t *)D_s->fields[1].data_array;
-    sim_ptr = (SSAL_Simulation *)sim;
-    RS_ptr = (SSAL_RealisationSimulation *)(sim_ptr->sim);
-    CRN_ptr = (SSAL_ChemicalReactionNetwork *)(sim_ptr->model->model);
+    CRN_ptr = (SSAL_CRN *)(sim);
     /*copy parameter vector to reaction rate vector*/
     memcpy(CRN_ptr->c,theta,CRN_ptr->M*sizeof(SSAL_real_t));
     /*Simulate with Gillespie direct method*/
-    SSAL_Simulate(sim_ptr,SSAL_ESSA_GILLESPIE_SEQUENTIAL,NULL);
-    memcpy(X_s,RS_ptr->output,RS_ptr->Nvar*RS_ptr->NT*sizeof(SSAL_real_t)); 
+    degils(CRN_ptr->M,CRN_ptr->N,NT,T,CRN_ptr->X0,CRN_ptr->nu_minus,CRN_ptr->nu,
+           CRN_ptr->c,CRN_ptr->nvar,CRN_ptr->vars,X_s);
+    //SSAL_Simulate(sim_ptr,SSAL_ESSA_GILLESPIE_SEQUENTIAL,NULL);
+    //memcpy(X_s,RS_ptr->output,RS_ptr->Nvar*RS_ptr->NT*sizeof(SSAL_real_t)); 
 }
 
 

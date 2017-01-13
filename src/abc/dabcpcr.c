@@ -18,7 +18,8 @@
 #include "mcl.h"
 /**
  * @brief Approximate Bayesian computation partial rejection control.
- * @details Likelihood free sequential Monte Carlo as proposed by Sisson et al. [1]
+ * @details Likelihood free sequential Monte Carlo as proposed by 
+ * Sisson et al. [1]
  *
  * @param abc_p ABC Parameters
  * @param smc_p SMC parameters
@@ -29,10 +30,12 @@
  *
  * @note [1] Sisson, S., Fan, Y. & Tanaka, M. M. 
  *          Sequential Monte Carlo without likelihoods.
- *          Proceedings of the National Academy of Sciences of the United States of America.
- *          2007;104(6):1760--1765.
+ *          Proceedings of the National Academy of Sciences of the United States 
+ *          of America. 2007;104(6):1760--1765.
  */
-int dabcpcr(ABC_Parameters abc_p, SMC_Parameters smc_p, Dataset * data, double * theta, double * weights, double *rho)
+int 
+dabcpcr(ABC_Parameters abc_p, SMC_Parameters smc_p, Dataset * data, 
+        double * theta, double * weights, double *rho)
 {
     unsigned int t,i,j;
     Dataset *data_s;
@@ -52,7 +55,8 @@ int dabcpcr(ABC_Parameters abc_p, SMC_Parameters smc_p, Dataset * data, double *
     abc_p.eps = smc_p.eps_t[0];
     dabcrs(abc_p,data, theta, rho);
    
-   /*initialise weights W_i = 1 (we don't normalise, rather we just store the sum)*/
+   /*initialise weights W_i = 1 (we don't normalise, 
+    rather we just store the sum)*/
     for (i=0;i<abc_p.nacc;i++)
     {
         weights[i] = 1.0;
@@ -120,20 +124,12 @@ int dabcpcr(ABC_Parameters abc_p, SMC_Parameters smc_p, Dataset * data, double *
             back_kern = 0;
             for (j=0;j<abc_p.nacc;j++)
             {
-                back_kern += weights_prev[j] *( (*(smc_p.qd))(abc_p.k,theta_prev+j*abc_p.k,theta+i*abc_p.k));
+                back_kern += weights_prev[j]*((*(smc_p.qd))(abc_p.k,
+                                                           theta_prev+j*abc_p.k,
+                                                           theta+i*abc_p.k));
             }
-            weights[i] = (*(abc_p.pd))(abc_p.k,theta + i*abc_p.k)*W_sum / back_kern;
-            //{
-            //    /*debug...*/
-            //    FILE *fp;
-            //    fp = fopen("")
-            //}
-            //fprintf(stderr,"%g,%g,%g,%g",weights_prev[i],weights[i],back_kern,(*(abc_p.pd))(abc_p.k,theta + i*abc_p.k));
-            //for (j=0;j<abc_p.k;j++)
-            //{
-            //    fprintf(stderr,",%g,%g",theta_prev[i*abc_p.k + j],theta[i*abc_p.k + j]);
-            //}
-            //fprintf(stderr,"\n");
+            weights[i] = (*(abc_p.pd))(abc_p.k,theta + i*abc_p.k)*
+                         (W_sum / back_kern);
         }
         /*update weight sum*/
         W_sum = 0;
@@ -157,7 +153,8 @@ int dabcpcr(ABC_Parameters abc_p, SMC_Parameters smc_p, Dataset * data, double *
             for (i=0;i<abc_p.nacc;i++)
             {
                 j = durngpmfs(abc_p.nacc,weights,W_sum);
-                memcpy(theta +i*abc_p.k, theta_prev + j*abc_p.k,abc_p.k*sizeof(double));
+                memcpy(theta +i*abc_p.k, theta_prev + j*abc_p.k,
+                       abc_p.k*sizeof(double));
                 if (rho != NULL)
                     rho[i] = rho[j];
             }

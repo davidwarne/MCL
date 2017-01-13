@@ -20,7 +20,8 @@
  * Computes numerically the multivaruate PMF from the CDF using
  * finite differences.
  */
-double cdf2pmf(CDF_estimate *M, double *p)
+double 
+cdf2pmf(CDF_estimate *M, double *p)
 {
     int j,j_1,k,jp1,jm1;
     unsigned int x[255];    

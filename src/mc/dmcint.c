@@ -21,15 +21,21 @@
  * @brief Monte Carlo Integration
  * @details Approximates E[f(X)] and 
  *      V[f(X)] = E[(E[f(X)] - f(X))^2] using 
- *      mu = 1/N \sum_{i=0}^N f(X^(i)) where X^(i) are user providied iid random vectors in R^k and f is a scalar valued function.
+ *      mu = 1/N \sum_{i=0}^N f(X^(i)) 
+ * where X^(i) are user providied iid random vectors in R^k and f is a scalar 
+ * valued function.
+ *
  * @param N the number of iid samples.
  * @param k dimensionality of X random vector.
  * @param X an Nxk array of iid samples. 
  * @param f the function to integrate.
  * @param E output of the expectation.
  * @param V output of the variance.
+ *
  */
-int dmcint(unsigned int N, unsigned int k, double *X, double* param,double (*f)(int, double *,double *), double *E, double *V)
+int 
+dmcint(unsigned int N, unsigned int k, double *X, double* param,
+       double (*f)(int, double *,double *), double *E, double *V)
 {
     unsigned int i;
     double f_i;

@@ -23,7 +23,9 @@
  * @brief samples runtime and variance for each bias correction term in ML estimater to
  * select optimal N_l based on these.
  */
-int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *data, CDF_estimate *M, unsigned int *Nl,double *Wl)
+int 
+dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *data, 
+          CDF_estimate *M, unsigned int *Nl,double *Wl)
 {
     int l,j,i,k;
     ABC_Parameters *abc_pl;
@@ -31,7 +33,7 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
     double *times;
     double *sigma2;
     double *thetal, *thetalm1;
-    double *rhol,*rholm1;
+    double *rhol;
     double c;
     CDF_estimate *M_mon;
     M_mon = (CDF_estimate*)malloc(sizeof(CDF_estimate));
@@ -85,7 +87,8 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
             /* Integrate smoothed indicator function */
             for (j=0;j<M->G.numPoints;j++)
             {
-                dmcint(abc_pl[l].nacc,abc_pl[l].k,thetal,M->G.coords + j*M->G.dim,M->g,E+j,V+j);
+                dmcint(abc_pl[l].nacc,abc_pl[l].k,thetal,
+                       M->G.coords + j*M->G.dim,M->g,E+j,V+j);
             }
 
             sigma2[l] = V[0];
@@ -96,9 +99,11 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
         }
         else
         {
-            memcpy(thetalm1,thetal,abc_pl[l-1].k*abc_pl[l-1].nacc*sizeof(double));
+            memcpy(thetalm1,thetal,
+                   abc_pl[l-1].k*abc_pl[l-1].nacc*sizeof(double));
             memcpy(abc_pl[l].support,thetalm1,abc_pl[l].k*sizeof(double));
-            memcpy(abc_pl[l].support+abc_pl[l].k,thetalm1,abc_pl[l].k*sizeof(double));
+            memcpy(abc_pl[l].support+abc_pl[l].k,thetalm1,
+                   abc_pl[l].k*sizeof(double));
             /*update support for sampling bias term */
             for (i=1;i<abc_pl[l-1].nacc;i++)
             {
@@ -109,9 +114,11 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
                         abc_pl[l].support[j] = thetalm1[i*abc_pl[l].k + j];
                     }
 
-                    if (thetalm1[i*abc_pl[l].k +j] > abc_pl[l].support[abc_pl[l].k + j])
+                    if (thetalm1[i*abc_pl[l].k +j] > 
+                        abc_pl[l].support[abc_pl[l].k + j])
                     {
-                        abc_pl[l].support[abc_pl[l].k + j] = thetalm1[i*abc_pl[l].k + j];
+                        abc_pl[l].support[abc_pl[l].k + j] = 
+                                                    thetalm1[i*abc_pl[l].k + j];
                     }
                 }
             }
@@ -120,7 +127,8 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
             /* integrate the difference in smoothed indicator functions*/
             for (j=0;j<M->G.numPoints;j++)
             {
-               dmcintd(abc_pl[l].nacc,abc_pl[l].k,thetal,thetalm1,M->G.coords +j*M->G.dim,M->g,E+j,V+j);
+               dmcintd(abc_pl[l].nacc,abc_pl[l].k,thetal,thetalm1,
+                       M->G.coords +j*M->G.dim,M->g,E+j,V+j);
             }
 
             for (i=0;i<abc_pl[l].nacc;i++)
@@ -129,7 +137,8 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
                 d = 0;
                 for (k=0;k<abc_pl[l].k;k++)
                 {
-                    double n = fabs(thetal[i*abc_pl[l].k + k] - thetalm1[i*abc_pl[l].k + k]);
+                    double n = fabs(thetal[i*abc_pl[l].k + k] -
+                                    thetalm1[i*abc_pl[l].k + k]);
                     if (n > d){
                         d = n;
                     }
@@ -159,14 +168,16 @@ int dmlabcnls(ABC_Parameters abc_p, int trials,MLMC_Parameters ml_p, Dataset *da
 
     /*use optimal solution based onn Lagrange multiplier*/
     c = 0;
-    Nl[0] = (unsigned int)ceil(log((double)M->G.numPoints)*sigma2[0]/(ml_p.target_RMSE*ml_p.target_RMSE));
+    Nl[0] = (unsigned int)ceil(log((double)M->G.numPoints)*
+                                 sigma2[0]/(ml_p.target_RMSE*ml_p.target_RMSE));
     for (l=1;l<=ml_p.L;l++)
     {
         c += sqrt(sigma2[l]*times[l]);
     }
     for (l=1;l<=ml_p.L;l++)
     {
-        Nl[l] = (unsigned int)ceil(log((double)M->G.numPoints)*c*(sqrt(sigma2[l])/sqrt(times[l]))/(ml_p.target_RMSE*ml_p.target_RMSE));
+        Nl[l] = (unsigned int)ceil(log((double)M->G.numPoints)*c*
+          (sqrt(sigma2[l])/sqrt(times[l]))/(ml_p.target_RMSE*ml_p.target_RMSE));
     }
 
     /*convert to relative scalings*/

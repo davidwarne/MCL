@@ -29,7 +29,8 @@
  * where A_s = {x : x_1 < s_1, x_2 < s_2, ... ,x_n < s_n}
  *
  */
-void monotone(CDF_estimate *M, CDF_estimate *M_mon)
+void 
+monotone(CDF_estimate *M, CDF_estimate *M_mon)
 {
     int j,j_1,k;
     double *F_sup;
@@ -44,13 +45,16 @@ void monotone(CDF_estimate *M, CDF_estimate *M_mon)
 
     memcpy(F_sup,M->F,M->G.numPoints*sizeof(double));
     memcpy(F_inf,M->F,M->G.numPoints*sizeof(double));
-
+    
+    /* computing sup_{A_s} F for all s */
     for (j=0;j<M->G.numPoints;j++)
     {
-        for (ibits=1;ibits < (1 << M->G.dim);ibits++){
+        for (ibits=1;ibits < (1 << M->G.dim);ibits++)
+        {
             IND2SUB(j,M->G.dim,M->G.D,x)
             unsigned int _ibits = ibits;
-            for (k=0;k<M->G.dim;k++){
+            for (k=0;k<M->G.dim;k++)
+            {
                 x[k] -= (_ibits % 2)*(x[k] > 0);
                 _ibits = _ibits >> 1;
             }
@@ -58,12 +62,15 @@ void monotone(CDF_estimate *M, CDF_estimate *M_mon)
             F_sup[j] = (F_sup[j] < F_sup[j_1]) ? F_sup[j_1] : F_sup[j];
         }
     }
+    /* computing inf_{B_s} F for all s */
     for (j=M->G.numPoints-1;j>=0;j--)
     {
-        for (ibits=1;ibits < (1 << M->G.dim);ibits++){
+        for (ibits=1;ibits < (1 << M->G.dim);ibits++)
+        {
             unsigned int _ibits = ibits;
             IND2SUB(j,M->G.dim,M->G.D,x)
-            for (k=0;k<M->G.dim;k++){
+            for (k=0;k<M->G.dim;k++)
+            {
                 x[k] += (_ibits % 2)*(x[k] < (M->G.D-1));
                 _ibits = _ibits >> 1;
             }
@@ -72,40 +79,25 @@ void monotone(CDF_estimate *M, CDF_estimate *M_mon)
         }
     }
 
-    //F_min = 1;
     F_max = 0;
     for (j=0;j<M->G.numPoints;j++)
     {
         M_mon->F[j] = 0.5*F_sup[j] + 0.5*F_inf[j];
-   //     M_mon->F[j] = F_sup[j] ;
-//        F_min = (M_mon->F[j] < F_min) ? M_mon->F[j] : F_min;
     }
-//    if (F_max > 1.0 && F_min < 0)
-//    {
-        for (j=0;j<M->G.numPoints;j++)
-        {
-            M_mon->F[j] = (M_mon->F[j] < 0) ? 0 : M_mon->F[j] ;
-        }
- //   }
+    for (j=0;j<M->G.numPoints;j++)
+    {
+        M_mon->F[j] = (M_mon->F[j] < 0) ? 0 : M_mon->F[j] ;
+    }
     for (j=0;j<M->G.numPoints;j++)
     {
         F_max = (M_mon->F[j] > F_max) ? M_mon->F[j] : F_max;
     }
-    //if (F_max > 1.0)
-   // {
-        for (j=0;j<M->G.numPoints;j++)
-        {
-        
-            M_mon->F[j] /= F_max;
-        }
-   // }
-
-    F_max = 0;
     for (j=0;j<M->G.numPoints;j++)
     {
-        F_max = (M_mon->F[j] > F_max) ? M_mon->F[j] : F_max;
+    
+        M_mon->F[j] /= F_max;
     }
-
+    
     free(F_sup);
     free(F_inf);
 }

@@ -23,7 +23,7 @@
  * @param abc_p ABC parameters
  * @param mcmc_p MCMC parameters
  * @param data dataset to condition on
- * @param theta array to store Markov Chain state (shoul represent samples from the posterior)
+ * @param theta array to store Markov Chain state 
  * @param rho sample discrepency metric values.
  *
  * @note [1] Marjoram, P., Molitor, J., Plagnol, V. & Tavare, S. 
@@ -31,7 +31,9 @@
  *          Proceedings of the National Academy of Sciences of the United States of America. 
  *          2003;100(26):15324--15328.   
  */
-int dabcmcmc(ABC_Parameters abc_p, MCMC_Parameters mcmc_p, Dataset *data, double * theta, double *rho)
+int 
+dabcmcmc(ABC_Parameters abc_p, MCMC_Parameters mcmc_p, Dataset *data, 
+         double * theta, double *rho)
 {
     unsigned int j;
     unsigned int cur_p,prop_p;
@@ -80,10 +82,12 @@ int dabcmcmc(ABC_Parameters abc_p, MCMC_Parameters mcmc_p, Dataset *data, double
             p_d = (*(abc_p.pd))(abc_p.k,theta + cur_p*abc_p.k);             
             
             /*backward transition probability*/
-            q_n = (*(mcmc_p.qd))(abc_p.k,theta+prop_p*abc_p.k,theta+cur_p*abc_p.k);
+            q_n = (*(mcmc_p.qd))(abc_p.k,theta+prop_p*abc_p.k,
+                                 theta+cur_p*abc_p.k);
             
             /*forward transition probability*/
-            q_d = (*(mcmc_p.qd))(abc_p.k,theta+cur_p*abc_p.k,theta+prop_p*abc_p.k);
+            q_d = (*(mcmc_p.qd))(abc_p.k,theta+cur_p*abc_p.k,
+                                 theta+prop_p*abc_p.k);
             
             /*p(th')q(th' -> th)/p(th)q(th -> th') likelihood ratio*/
             lr = (p_n*q_n)/(p_d*q_d);
@@ -123,10 +127,12 @@ int dabcmcmc(ABC_Parameters abc_p, MCMC_Parameters mcmc_p, Dataset *data, double
             p_d = (*(abc_p.pd))(abc_p.k,theta + cur_p*abc_p.k);             
             
             /*backward transition probability*/
-            q_n = (*(mcmc_p.qd))(abc_p.k,theta+prop_p*abc_p.k,theta+cur_p*abc_p.k);
+            q_n = (*(mcmc_p.qd))(abc_p.k,theta+prop_p*abc_p.k,
+                                 theta+cur_p*abc_p.k);
             
             /*forward transition probability*/
-            q_d = (*(mcmc_p.qd))(abc_p.k,theta+cur_p*abc_p.k,theta+prop_p*abc_p.k);
+            q_d = (*(mcmc_p.qd))(abc_p.k,theta+cur_p*abc_p.k,
+                                 theta+prop_p*abc_p.k);
             
             /*p(th')q(th' -> th)/p(th)q(th -> th') likelihood ratio*/
             lr = (p_n*q_n)/(p_d*q_d);
@@ -137,7 +143,8 @@ int dabcmcmc(ABC_Parameters abc_p, MCMC_Parameters mcmc_p, Dataset *data, double
         
         if (reject)/*not a candidate, keep current state*/
         {
-            memcpy(theta+prop_p*abc_p.k,theta+cur_p*abc_p.k,abc_p.k*sizeof(double));
+            memcpy(theta+prop_p*abc_p.k,theta+cur_p*abc_p.k,
+                   abc_p.k*sizeof(double));
             if (rho != NULL)
                 rho[prop_p] = rho[cur_p];
         }

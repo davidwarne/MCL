@@ -28,7 +28,9 @@
  * @param M the resulting estimated CDF 
  *
  */
-int dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, CDF_estimate *M)
+int 
+dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, 
+           CDF_estimate *M)
 {
     /*initialise*/
     double *E;
@@ -36,7 +38,7 @@ int dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, CDF_est
     ABC_Parameters *abc_pl;
     size_t max_n;
     double *thetal, *thetalm1;
-    double *rhol,*rholm1;
+    double *rhol;
     unsigned int i,j,l,k;
    
     CDF_estimate *M_mon;
@@ -51,7 +53,8 @@ int dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, CDF_est
         max_n = (ml_p.Nl[l] > max_n) ? ml_p.Nl[l] : max_n;
     }
     /*parameters for each level*/
-    if ((abc_pl = (ABC_Parameters *)malloc((ml_p.L+1)*sizeof(ABC_Parameters))) ==  NULL)
+    if ((abc_pl = (ABC_Parameters *)malloc((ml_p.L+1)*sizeof(ABC_Parameters))) 
+         ==  NULL)
     {
         return 1;
     }
@@ -62,7 +65,6 @@ int dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, CDF_est
         abc_pl[l].support = (SSAL_real_t *)malloc(abc_p.k*2*sizeof(double));
         memcpy(abc_pl[l].support,abc_p.support,abc_p.k*2*sizeof(SSAL_real_t));
         abc_pl[l].nacc = ml_p.Nl[l];
-        //abc_pl[l].nacc = 200; /*debug*/
     }
 
     l=0;
@@ -76,7 +78,8 @@ int dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, CDF_est
         return 1;
     }
 
-    if ((thetal = (double *)malloc(((size_t)max_n)*((size_t)abc_pl[0].k)*sizeof(double))) == NULL)
+    if ((thetal = (double *)malloc(((size_t)max_n)*((size_t)abc_pl[0].k)*
+                                   sizeof(double))) == NULL)
     {
         
         return 1;
@@ -96,7 +99,8 @@ int dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, CDF_est
     dabcrs(abc_pl[0], data,thetal,rhol);
     for (j=0;j<M->G.numPoints;j++)
     {
-        dmcint(abc_pl[0].nacc,abc_pl[0].k,thetal,M->G.coords + j*M->G.dim,M->g,E+j,V+j);
+        dmcint(abc_pl[0].nacc,abc_pl[0].k,thetal,M->G.coords + j*M->G.dim,
+               M->g,E+j,V+j);
     }
     /* initial estimator*/
     for (j=0;j<M->G.numPoints;j++)
@@ -141,7 +145,8 @@ int dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, CDF_est
     {
         memcpy(thetalm1,thetal,abc_pl[l-1].k*abc_pl[l-1].nacc*sizeof(double));
         memcpy(abc_pl[l].support,thetalm1,abc_pl[l].k*sizeof(double));
-        memcpy(abc_pl[l].support+abc_pl[l].k,thetalm1,abc_pl[l].k*sizeof(double));
+        memcpy(abc_pl[l].support+abc_pl[l].k,thetalm1,
+               abc_pl[l].k*sizeof(double));
         /*update support for prior*/
         for (i=1;i<abc_pl[l-1].nacc;i++)
         {
@@ -152,16 +157,19 @@ int dmlabccdfs(ABC_Parameters abc_p,MLMC_Parameters ml_p, Dataset *data, CDF_est
                     abc_pl[l].support[j] = thetalm1[i*abc_pl[l].k + j];
                 }
 
-                if (thetalm1[i*abc_pl[l].k +j] > abc_pl[l].support[abc_pl[l].k + j])
+                if (thetalm1[i*abc_pl[l].k +j] > 
+                    abc_pl[l].support[abc_pl[l].k + j])
                 {
-                    abc_pl[l].support[abc_pl[l].k + j] = thetalm1[i*abc_pl[l].k + j];
+                    abc_pl[l].support[abc_pl[l].k + j] = 
+                                                    thetalm1[i*abc_pl[l].k + j];
                 }
             }
         }
         dabcrjs(abc_pl[l-1],abc_pl[l],data,M_mon, thetalm1,thetal,rhol);
         for (j=0;j<M->G.numPoints;j++)
         {
-            dmcintd(abc_pl[l].nacc,abc_pl[l].k,thetal,thetalm1,M->G.coords+j*M->G.dim,M->g,E+j,V+j);
+            dmcintd(abc_pl[l].nacc,abc_pl[l].k,thetal,thetalm1,
+                    M->G.coords+j*M->G.dim,M->g,E+j,V+j);
         }
         
         for (j=0;j<M->G.numPoints;j++)

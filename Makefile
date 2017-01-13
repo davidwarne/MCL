@@ -34,10 +34,6 @@ all: $(EXE)
 .c.o: 
 	$(CC) $(OPTS) $(PROFILE) -c $< -o $@ $(INC) 
 
-#$(BIN): $(OBJS)
-#	$(CC) $(OPTS) $(PROFILE)  $(OBJS) -o $(BIN) -lm 
-#	@echo Binary created!!
-
 $(EXE): $(EXEOBJS) $(OBJS) 
 	$(CC) $(OPTS) -o $@  $(INC) $@.o $(OBJS)   $(LIBS)
 clean:

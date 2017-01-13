@@ -20,7 +20,9 @@
 /**
  * @brief samples variance to esitmate number of required samples
  */
-int dabcns(ABC_Parameters abc_p,int trials, double error, Dataset *data, CDF_estimate *M, unsigned int *N)
+int 
+dabcns(ABC_Parameters abc_p,int trials, double error, Dataset *data, 
+       CDF_estimate *M, unsigned int *N)
 {
     int l,j,i,k;
     double times;
@@ -46,7 +48,8 @@ int dabcns(ABC_Parameters abc_p,int trials, double error, Dataset *data, CDF_est
     dabcrs(abc_p, data,theta, NULL);
     for (j=0;j<M->G.numPoints;j++)
     {
-        dmcint(abc_p.nacc,abc_p.k,theta,M->G.coords +j*M->G.dim,M->g,M->F+j,M->V+j);
+        dmcint(abc_p.nacc,abc_p.k,theta,M->G.coords +j*M->G.dim,M->g,M->F+j,
+               M->V+j);
     }
     end_t = clock();
     sigma2 = M->V[0];

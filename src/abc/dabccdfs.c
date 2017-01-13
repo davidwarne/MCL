@@ -19,17 +19,20 @@
 
 /**
  * @brief standard ABC rejection
- * @detail Applies ABC rejection to compute the expectation of an indicator function at
- * various points in parameter space resulting in an estimator of the posterior CDF
+ * @detail Applies ABC rejection to compute the expectation of an indicator 
+ * function at various points in parameter space resulting in an estimator of 
+ * the posterior CDF.
+ *
  * @param sim SSAL simulation
  * @param abc_p ABC parameters
  * @param data a realisation of the system we a fitting to
  * @param M the resulting approximated CDF
  */
-int dabccdfs(ABC_Parameters abc_p,  Dataset *data, CDF_estimate * M)
+int 
+dabccdfs(ABC_Parameters abc_p,  Dataset *data, CDF_estimate * M)
 {
     double *theta;
-    unsigned int j,i;
+    unsigned int j;
 
     /*samples allocation*/
     if ((theta = (double *)malloc(abc_p.nacc*abc_p.k*sizeof(double))) == NULL) 
@@ -41,7 +44,8 @@ int dabccdfs(ABC_Parameters abc_p,  Dataset *data, CDF_estimate * M)
     /*collect into indicator functions*/
     for (j=0;j<M->G.numPoints;j++)
     {
-        dmcint(abc_p.nacc,abc_p.k,theta,M->G.coords +j*M->G.dim,M->g,&(M->F[j]),&(M->V[j]));
+        dmcint(abc_p.nacc,abc_p.k,theta,M->G.coords +j*M->G.dim,M->g,
+               &(M->F[j]),&(M->V[j]));
     }
     return 0;
 }

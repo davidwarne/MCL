@@ -16,7 +16,21 @@
  */
 #include "mcl.h"
 
-Dataset* copyDataset(Dataset * d)
+/**
+ * @brief copies the memory structure of the dataset d
+ * @details This function copys all fields and allocates new data arrays based 
+ * on field sizes. That is the a new data set structure is create using d as a
+ * template.
+ *
+ * @param d data structure to copy
+ * @returns a data structure with same field inforamtion and array sizes as d.
+ *
+ *
+ * @note This function does not populate the new data arrays.
+ * @todo add a flag option to copy with data.
+ */
+Dataset* 
+copyDataset(Dataset * d)
 {
     size_t i;
     Dataset *s;

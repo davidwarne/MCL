@@ -24,14 +24,16 @@
  * @param theta array of accepted posterior samples
  * @param rho values of rho for each sample
  */
-int dabcrs(ABC_Parameters abc_p, Dataset * data, double * theta,double *rho)
+int 
+dabcrs(ABC_Parameters abc_p, Dataset * data, double * theta,double *rho)
 {
     unsigned int i,j;
     double d;
     Dataset *data_s;
     /*allocate memory for simulated  dataset*/
     data_s = copyDataset(data); 
-    /*ABC rejection mode, fixed compute budget nmax > 0, else fixed acceptance threshold eps*/
+    /*ABC rejection mode, fixed compute budget nmax > 0, 
+     * else fixed acceptance threshold eps*/
     if (abc_p.nmax == 0)
     {
         j=0;
