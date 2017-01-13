@@ -232,6 +232,15 @@ dmcintd(unsigned int, unsigned int, double *, double *, double *,
 int 
 dmcintv(unsigned int, unsigned int, double *,double *, double *);
 
+/*Generic multilevel Monte Carlo engine*/
+int 
+dmlmcs(int, int *, double *, int (*)(int, int, int, double *, double*), int, 
+       double *, double *);
+
+int 
+dmlmcnls(int, int, double, double *,int (*)(int, int, int, double *, double*), 
+         int, double *);
+
 /*data manipulation*/
 Dataset *
 copyDataset(Dataset *);
