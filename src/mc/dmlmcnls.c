@@ -40,16 +40,17 @@
  */
 int 
 dmlmcnls(int L, int n, double eps, double *params, 
-       int (*f)(int, int, int, double *, double*), int K, double *nl)
+       int (*f)(int, int, int, double *, double*), int K, int *nl)
 {
     int i,j,k,l; 
     double Ql[K];
-    double fXl[K];
+    double *fXl;
     double vl[L+1];
     double cl[L+1];
     double M;
     clock_t start_t, end_t;
 
+    fXl = (double *)malloc(K*n*sizeof(double));
     for (l=0;l<=L;l++)
     {
         /* run and time computation at this level*/
@@ -70,7 +71,7 @@ dmlmcnls(int L, int n, double eps, double *params,
     }
     for (l=0;l<=L;l++)
     {
-        nl[l] = (sqrt(vl[l]/cl[l])*M)/(eps*eps);
+        nl[l] = (int) ceil((sqrt(vl[l]/cl[l])*M)/(eps*eps));
     }
     return 0;
 }

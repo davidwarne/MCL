@@ -239,7 +239,7 @@ dmlmcs(int, int *, double *, int (*)(int, int, int, double *, double*), int,
 
 int 
 dmlmcnls(int, int, double, double *,int (*)(int, int, int, double *, double*), 
-         int, double *);
+         int, int *);
 
 /*data manipulation*/
 Dataset *

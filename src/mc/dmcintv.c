@@ -47,7 +47,7 @@ dmcintv(unsigned int N,unsigned int k, double *X,double *E, double *V)
    
     for (j=0;j<k;j++)
     {
-        E[k] /= (double)N;
+        E[j] /= (double)N;
     }
 
     if (V == NULL)

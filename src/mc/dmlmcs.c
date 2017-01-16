@@ -57,14 +57,23 @@ dmlmcs(int L, int *nl, double *params,
     int i,j,k,l; 
     double Ql[K];
     double vl;
-    double fXl[K];
+    double *fXl;
+    int max_n;
+    
+    max_n = nl[0];
+    for (l=1;l<=L;l++)
+    {
+        max_n = (max_n < nl[l]) ? nl[l] : max_n;
+    }
 
+    fXl = (double *)malloc(K*max_n*sizeof(double));
     *sigma2 = 0;
 
     /*compute coarsest level E_0*/
     (*f)(0,nl[0],K,params,fXl);
     dmcintv(nl[0],K,fXl,Ef,&vl);
     *sigma2 = vl/((double)nl[0]);
+    printf("E_%d %f\n",0,Ef[0]);
     /* compute bias correction*/
     for (l=1;l<=L;l++)
     {
@@ -75,6 +84,7 @@ dmlmcs(int L, int *nl, double *params,
         {
             Ef[k] += Ql[k];
         }
+        printf("E_%d %f\n",l,Ef[0]);
         *sigma2 += vl/((double)nl[l]);
     }
 
