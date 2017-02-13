@@ -22,8 +22,8 @@
 #include <math.h>
 #include <stdint.h>
 
-#define ABC_MAX_NAME_SIZE 128
-enum ABC_DataType_enum
+#define MCL_MAX_NAME_SIZE 128
+enum DataType_enum
 {
     REAL32_DATA,
     REAL64_DATA,
@@ -33,7 +33,7 @@ enum ABC_DataType_enum
     NAT64_DATA,
     TEXT_DATA
 };
-typedef enum ABC_DataType_enum ABC_DataType;
+typedef enum DataType_enum DataType;
 
 #if defined(__CHECKPOINT__)
 #define CHECKPOINT_FILENAME "sim.chkpnt"
@@ -43,11 +43,11 @@ extern unsigned int sim_counter;
 struct field_struct 
 {
     /**field name*/
-    char name[ABC_MAX_NAME_SIZE];    
+    char name[MCL_MAX_NAME_SIZE];    
     size_t numRows; 
     size_t numCols;
     size_t numBytes;
-    ABC_DataType type;
+    DataType type;
     void *data_array;
 
 };
@@ -86,13 +86,32 @@ struct ABC_Parameters_struct
     /**model simulation function*/ 
     int (*s)(void *, SSAL_real_t* ,Dataset *); 
 };
-
 typedef struct ABC_Parameters_struct ABC_Parameters;
+
+struct PM_Paramters_stuct
+{
+    /**prior sampler function*/ 
+    int (*p)(unsigned int,unsigned int,SSAL_real_t *,SSAL_real_t *); 
+    /** Prior Distribution function; not required for all methods*/ 
+    /** @note some algorithms will require the log of the density*/
+    SSAL_real_t (*pd)(unsigned int, SSAL_real_t*);
+    /**Monte Carlo likelihood estimator */
+    void * alg_params;
+    double (*L_hat)(void *, SSAL_real_t *, Dataset *);
+};
+typedef struct PM_Parameters_struct PM_Parameters;
+
 
 struct MCMC_Parameters_struct 
 {
+    /**dimensionality of parameter space*/  
+    unsigned int k; 
     /** number of burnin simulation to perfrom before sampling*/
     unsigned int burnin_iters; 
+    /** number of sampling iterations*/
+    unsigned int iters; 
+    /** thinning parameters*/
+    unsigned int thin; 
     SSAL_real_t *theta0;
     /**transition kernel sampler*/
     int (*q)(unsigned int, SSAL_real_t*, SSAL_real_t*);

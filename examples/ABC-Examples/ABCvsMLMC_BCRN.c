@@ -232,7 +232,7 @@ Dataset ImportData(char *filename,int n)
     data.fields = (field *)malloc(data.numFields*sizeof(field));
     
     /*field 1: timesteps*/
-    strncpy(data.fields[0].name,"T",ABC_MAX_NAME_SIZE);
+    strncpy(data.fields[0].name,"T",MCL_MAX_NAME_SIZE);
     data.fields[0].numRows = numlines-2;
     data.fields[0].numCols = 1;
     data.fields[0].type = REAL64_DATA;
@@ -240,7 +240,7 @@ Dataset ImportData(char *filename,int n)
     data.fields[0].data_array = (void *)malloc(data.fields[0].numRows*data.fields[0].numCols*sizeof(double));
     
     /*field 1: timesteps*/
-    strncpy(data.fields[1].name,"X_d",ABC_MAX_NAME_SIZE);
+    strncpy(data.fields[1].name,"X_d",MCL_MAX_NAME_SIZE);
     data.fields[1].numRows = n;
     data.fields[1].numCols = numlines-2;
     data.fields[1].type = REAL64_DATA;

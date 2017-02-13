@@ -41,12 +41,22 @@ dmcint(unsigned int N, unsigned int k, double *X, double* param,
     double f_i;
     *E = 0;
     *V = 0;
-    for (i=0;i<N;i++)
+    if (k == 1 && f == NULL)
     {
-        //printf("%d %d ",i,N);
-        f_i = (*f)(k,X + i*k,param);
-        (*E) += f_i;
-        (*V) += f_i*f_i;
+        for (i=0;i<N;i++)
+        {
+            (*E) += X[i];
+            (*V) += X[i]*X[i];
+        }
+    }
+    else
+    {
+        for (i=0;i<N;i++)
+        {
+            f_i = (*f)(k,X + i*k,param);
+            (*E) += f_i;
+            (*V) += f_i*f_i;
+        }
     }
     *E /= (double)N;
     *V /= (double)N;
