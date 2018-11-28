@@ -58,6 +58,10 @@ dabcrs(ABC_Parameters abc_p, Dataset * data, double * theta,double *rho)
                     {
                         fprintf(fp,",%lg",theta[j*abc_p.k + i]);
                     }
+                    if (rho != NULL)
+                    {
+                        fprintf(fp,",%lg",rho[j]);
+                    }
                     fprintf(fp,",%d\n",sim_counter);
                     fclose(fp);
                 }
@@ -79,9 +83,25 @@ dabcrs(ABC_Parameters abc_p, Dataset * data, double * theta,double *rho)
             /*simulate the process and evaluate rho*/
             (*(abc_p.s))(abc_p.sim,theta+j*abc_p.k,data_s);
             rho[j] = (*(abc_p.rho))(data,data_s);
+#if defined(__CHECKPOINT__)
+            if ((j+1)%1000 == 0)
+            {
+                FILE *fp;
+                fp = fopen(CHECKPOINT_FILENAME,"a");
+                for (int k=(j-999);k<=j;k++)
+                {
+                    fprintf(fp,"%d",k);
+                    for (i=0;i<abc_p.k;i++)
+                    {
+                        fprintf(fp,",%lg",theta[k*abc_p.k + i]);
+                    }
+                    fprintf(fp,",%lg,%d\n",rho[k],sim_counter);
+                }
+                fclose(fp);
+            }
+#endif
+
         }
-        /*sort by rho */
-        /* compute quartile and determine nacc*/
     }
     return 0;
 }

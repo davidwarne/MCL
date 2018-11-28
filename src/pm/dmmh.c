@@ -97,7 +97,7 @@ dmmh(PM_Parameters pm_p, MCMC_Parameters mcmc_p, Dataset *data,
             /*since we are int burn-in we just swap indices*/
             temp = cur_p;
             cur_p = prop_p;
-            prop_p = cur_p;
+            prop_p = temp;
 
             /*update the cur_logl and cur_logp*/
             cur_logl = prop_logl;

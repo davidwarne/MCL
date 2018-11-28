@@ -55,6 +55,10 @@ dabcmcmc(ABC_Parameters abc_p, MCMC_Parameters mcmc_p, Dataset *data,
     else
     {
         memcpy(theta,mcmc_p.theta0,abc_p.k*sizeof(double));
+        if (rho != NULL)
+        {
+            rho[0] = (*(abc_p.rho))(data,data_s);
+        }
     }
 
 
@@ -98,7 +102,7 @@ dabcmcmc(ABC_Parameters abc_p, MCMC_Parameters mcmc_p, Dataset *data,
                 unsigned int temp;
                 temp = cur_p; /*we are in burn-in phase, so just swap indices*/
                 cur_p = prop_p;
-                prop_p = cur_p;
+                prop_p = temp;
             }
         }
     }
@@ -171,7 +175,11 @@ dabcmcmc(ABC_Parameters abc_p, MCMC_Parameters mcmc_p, Dataset *data,
                 {
                     fprintf(fp," %lg",theta[ii*abc_p.k+k]);
                 }
-                fprintf(fp,"\n");
+                if (rho != NULL)
+                {
+                    fprintf(fp,",%lg",rho[ii]);
+                }
+                fprintf(fp,",%d\n",sim_counter);
             }
             fclose(fp);
         }

@@ -54,5 +54,6 @@ dmcintd(unsigned int N,unsigned int k, double *X, double *Y, double *params,
     *E /= (double)N;
     *V /= (double)N;
     *V = ((double)N)*(*V - (*E)*(*E))/((double) N-1);
+    return 0;
 }
 

@@ -40,8 +40,22 @@ copyDataset(Dataset * d)
     /*allocate  new data arrays*/
     for (i=0;i<s->numFields;i++)
     {
+        Dataset **datasets_s;
+        Dataset **datasets_d;
         s->fields[i] = d->fields[i];
         s->fields[i].data_array = (void *)malloc(d->fields[i].numBytes);
+        datasets_s = (Dataset **)s->fields[i].data_array;
+        datasets_d = (Dataset **)d->fields[i].data_array;
+        /* recursively copy sub datasets */
+        if (s->fields[i].type == PTR_DATA)
+        {
+            size_t j,n;
+            n = (s->fields[i].numRows)*(s->fields[i].numCols);
+            for (j=0;j<n;j++)
+            {
+               datasets_s[j] = copyDataset(datasets_d[j]);
+            }
+        }
     }
     return s;
 }
