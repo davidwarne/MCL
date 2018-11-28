@@ -31,7 +31,8 @@ enum DataType_enum
     INT64_DATA,
     NAT32_DATA,
     NAT64_DATA,
-    TEXT_DATA
+    TEXT_DATA,
+    PTR_DATA
 };
 typedef enum DataType_enum DataType;
 
@@ -88,7 +89,7 @@ struct ABC_Parameters_struct
 };
 typedef struct ABC_Parameters_struct ABC_Parameters;
 
-struct PM_Paramters_stuct
+struct PM_Parameters_struct
 {
     /**prior sampler function*/ 
     int (*p)(unsigned int,unsigned int,SSAL_real_t *,SSAL_real_t *); 
@@ -98,6 +99,7 @@ struct PM_Paramters_stuct
     /**Monte Carlo likelihood estimator */
     void * alg_params;
     double (*L_hat)(void *, SSAL_real_t *, Dataset *);
+    void (*acc_f)(void *,double ,double );
 };
 typedef struct PM_Parameters_struct PM_Parameters;
 
@@ -217,7 +219,7 @@ dabccdfs(ABC_Parameters, Dataset * , CDF_estimate *);
 int 
 dmlabccdfs(ABC_Parameters ,MLMC_Parameters,  Dataset *, CDF_estimate *);
 
-/*ABC rejection samplers*/
+/*ABC samplers*/
 int 
 dabcrs(ABC_Parameters, Dataset *, double *,double *);
 
@@ -230,6 +232,10 @@ dabcmcmc(ABC_Parameters, MCMC_Parameters, Dataset *, double *,double *);
 
 int 
 dabcpcr(ABC_Parameters, SMC_Parameters, Dataset *, double *, double *,double *);
+
+/* pseudo-marginal methods*/
+int
+dmmh(PM_Parameters, MCMC_Parameters, Dataset *, double *);
 
 /*sampling calculation of N_l*/
 int 

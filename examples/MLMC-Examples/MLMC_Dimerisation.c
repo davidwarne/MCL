@@ -37,12 +37,23 @@
 
 SSAL_CRN dimer_model;
 int EXACT;
+double
+f(double X)
+{
+    double sigma, Y;
+    sigma = 100;
+    Y = 3708;
+    return 1e7*exp(-(Y-X)*(Y-X)/(2.0*sigma*sigma))/(sigma*sqrt(2.0*M_PI));
+}
+
 
 int 
 simulate_sl(int n,double * params, double *D)
 {
     double T;
+    double p;
     T = params[1];
+    p = params[3];
     for (int i = 0;i<n;i++)
     {
        // degils(dimer_model.M,dimer_model.N,1,&T,dimer_model.X0,
@@ -51,8 +62,11 @@ simulate_sl(int n,double * params, double *D)
        demnrms(dimer_model.M,dimer_model.N,1,&T,dimer_model.X0,
               dimer_model.nu_minus,dimer_model.nu,dimer_model.c,
               dimer_model.nvar,dimer_model.vars,D+i);
+            //D[i] = pow(D[i],p);
+            D[i] = f(D[i]);
     }
 }
+
 
 int
 simulate_ml(int l, int nl, int K, double *params, double *D)
@@ -61,11 +75,12 @@ simulate_ml(int l, int nl, int K, double *params, double *D)
     int M;
     int E;
     double T;
-
+    double p;
     /*extract parameters*/
     tau0 = params[0];
     T = params[1];
     M = (int)params[2];
+    p = params[3];
     if (K != 1 || dimer_model.nvar != 1)
     {
         return 1;
@@ -78,6 +93,8 @@ simulate_ml(int l, int nl, int K, double *params, double *D)
             datauls(dimer_model.M,dimer_model.N,1,&T,dimer_model.X0,
                     dimer_model.nu_minus,dimer_model.nu,dimer_model.c,
                     dimer_model.nvar,dimer_model.vars,tau0, D + i);
+            //D[i] = pow(D[i],p);
+            D[i] = f(D[i]);
         }
     }
     else if (l == EXACT)
@@ -89,7 +106,8 @@ simulate_ml(int l, int nl, int K, double *params, double *D)
             daectauls(dimer_model.M,dimer_model.N,1,&T,dimer_model.X0,
                     dimer_model.nu_minus,dimer_model.nu,dimer_model.c,
                     dimer_model.nvar,dimer_model.vars,taul, &D_e,&D_c);
-            D[i] = D_e - D_c;
+            //D[i] = pow(D_e,p) - pow(D_c,p);
+            D[i] = f(D_e) - f(D_c);
         }
 
     }
@@ -102,7 +120,8 @@ simulate_ml(int l, int nl, int K, double *params, double *D)
             dactauls(dimer_model.M,dimer_model.N,1,&T,dimer_model.X0,
                     dimer_model.nu_minus,dimer_model.nu,dimer_model.c,
                     dimer_model.nvar,dimer_model.vars,taul,M, &D_f,&D_c);
-            D[i] = D_f - D_c;
+            //D[i] = pow(D_f,p) - pow(D_c,p);
+            D[i] = f(D_f) - f(D_c);
         }
 
     }
@@ -116,7 +135,7 @@ main(int argc, char ** argv)
     /* Target standard deviation of estimator (i.e. the standard error) */
     double eps;     
     double mol; /*Target confinence interval*/
-    double params[4];
+    double params[5];
     int L;
     int *nl;
     int n;
@@ -136,20 +155,23 @@ main(int argc, char ** argv)
     dimer_model.nvar = 1;
     dimer_model.vars[0] = 2; /* we have [M,P,D]*/
 
-    mol = 1;
-    eps = mol/CI;
     ml = 1;
-    if (argc < 4)
+    if (argc < 6)
     {
+        fprintf(stderr,"Usage: %s moment mol tau0 L M \n",argv[0]);
+        params[3] = (double)(atoi(argv[1]));
+        mol = (double)(atof(argv[2]));
         ml = 0;
-        fprintf(stderr,"Usage: %s tau0 L M\n",argv[0]);
     }
     else
     {
-        params[0] = (double)atof(argv[1]);
-        L = (int)atoi(argv[2]);
-        params[2] = (double)(atoi(argv[3]));
+        params[0] = (double)atof(argv[3]);
+        L = (int)atoi(argv[4]);
+        params[2] = (double)(atoi(argv[5]));
+        params[3] = (double)(atoi(argv[1]));
+        mol = (double)(atof(argv[2]));
     }
+    eps = mol/CI;
 
     params[1] = 1.0; 
     if (ml == 1)

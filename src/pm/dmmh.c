@@ -30,13 +30,26 @@
  * @param data dataset to condition on
  * @param theta array to store Markov Chain state.
  *
- * @note [1] Andrieu, C. and Roberts, G. O. 
- *           The pseudo-marginal approach for efficient Monte Carlo 
- *           computations.
- *           The Annals of Statistics.
- *           2009;37(2):697--725.
  * @note For numerical stability reasons, all density computations are 
  * assumed to be in log scale.
+ * @note If a Sequential Monte Carlo estimator is used, as per [2,3] then this 
+ *       function performs the Particle Marginal Metrpolis Hastings (PMMH) 
+ *       method.
+ *
+ * @note [1] Andrieu, C. and Roberts, G. O. 
+ *           The pseudo-marginal approach for efficient Monte Carlo 
+ *           computations,
+ *           The Annals of Statistics,
+ *           2009;37(2):697--725.
+ * @note [2] Andrieu, C., Doucet, A. and Holenstein, R.  
+ *           Particle Markov chain Monte Carlo,
+ *           Journal of the Royal Statistical Society Series B,
+ *           2010;72(3):269--342.
+ * @note [3] Golightly, A. and Wilkinson, D. J. 
+ *           Bayesian parameter inference for stochastic biochemical network
+ *           models using particle Markov chain Monte Carlo,
+ *           Interface Focus,
+ *           2011;1:807--820.
  */
 int
 dmmh(PM_Parameters pm_p, MCMC_Parameters mcmc_p, Dataset *data, 
@@ -51,11 +64,16 @@ dmmh(PM_Parameters pm_p, MCMC_Parameters mcmc_p, Dataset *data,
     memcpy(theta,mcmc_p.theta0,mcmc_p.k*sizeof(double));
     /*compute log-likelihood using Monte Carlo using theta'*/
     cur_logl = (*(pm_p.L_hat))(pm_p.alg_params,theta,data);
+    /*for (int i=0;i<100;i++)
+    {
+        cur_logl = (*(pm_p.L_hat))(pm_p.alg_params,theta,data);
+        fprintf(stderr,"DEBUG: test %d loglike = %f\n",i,cur_logl);
+    }*/
     cur_logp = (*(pm_p.pd))(mcmc_p.k,theta);
     /*perform burn-in iters*/
     cur_p = 0;
     prop_p = 1;
-    for (int j=0;j<=mcmc_p.burnin_iters;j++)
+    for (int j=0;j<mcmc_p.burnin_iters;j++)
     {
         /*sample proposal density q(theta -> theta')*/
         (*(mcmc_p.q))(mcmc_p.k,theta+cur_p*mcmc_p.k,theta+prop_p*mcmc_p.k);
@@ -91,6 +109,7 @@ dmmh(PM_Parameters pm_p, MCMC_Parameters mcmc_p, Dataset *data,
     prop_p = 1;
     for (int j=1;j<mcmc_p.iters;j++)
     {
+        double u;
         /*sample proposal density q(theta -> theta')*/
         (*(mcmc_p.q))(mcmc_p.k,theta+cur_p*mcmc_p.k,theta+prop_p*mcmc_p.k);
         /*compute log-likelihood using Monte Carlo using theta'*/
@@ -106,16 +125,20 @@ dmmh(PM_Parameters pm_p, MCMC_Parameters mcmc_p, Dataset *data,
         /*compute log of MH acceptance probability*/
         log_h = prop_logl + prop_logp + prop_logq - cur_logl - cur_logp 
                 - cur_logq;
-
+        u = durngus(0.0,1.0);
         /*accept/reject*/
-        if (log(durngus(0.0,1.0)) <= log_h )
+        if (log(u) <= log_h )
         {
+            if (pm_p.acc_f != NULL)
+            {
+               (*(pm_p.acc_f))(pm_p.alg_params,cur_logl,prop_logl);
+            }
             cur_logl = prop_logl;
             cur_logp = prop_logp;
         }
         else
         {
-            /*copy previos state*/
+            /*copy previous state*/
             memcpy(theta+prop_p*mcmc_p.k,theta+cur_p*mcmc_p.k,
                    mcmc_p.k*sizeof(double));
         }
@@ -131,7 +154,7 @@ dmmh(PM_Parameters pm_p, MCMC_Parameters mcmc_p, Dataset *data,
             {
                 ii = j - 1000 + i;
                 fprintf(fp,"%d",ii);
-                for (int k=0;k<abc_p.k;k++)
+                for (int k=0;k<mcmc_p.k;k++)
                 {
                     fprintf(fp," %lg",theta[ii*mcmc_p.k+k]);
                 }
